@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useState, useMemo, useRef, useCallback } from "react";
+import Papa from "papaparse";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -90,6 +91,8 @@ export default function AssessmentScoreboard({
   const [bulkScores, setBulkScores] = useState<Record<number, string>>({});
   const [showAddAssessment, setShowAddAssessment] = useState(false);
   const [detailsAssessment, setDetailsAssessment] = useState<Assessment | null>(null);
+  const [showCSVImport, setShowCSVImport] = useState(false);
+  const [csvImportAssessmentId, setCsvImportAssessmentId] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<{ studentId: number; assessmentId: number } | null>(null);
   const [cellValue, setCellValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -332,6 +335,19 @@ export default function AssessmentScoreboard({
           </Button>
           {!isAdmin && (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (assessments.length === 0) { toast.error("Add an assessment first"); return; }
+                  setCsvImportAssessmentId(assessments[0].id);
+                  setShowCSVImport(true);
+                }}
+                className="gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                Import Scores
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -652,6 +668,20 @@ export default function AssessmentScoreboard({
         onSuccess={() => utils.assessments.list.invalidate({ classId })}
       />
 
+      {/* CSV Score Import Dialog */}
+      {showCSVImport && csvImportAssessmentId && (
+        <CSVScoreImportWizard
+          classId={classId}
+          assessments={assessments}
+          initialAssessmentId={csvImportAssessmentId}
+          onClose={() => setShowCSVImport(false)}
+          onSuccess={() => {
+            utils.grades.listByClass.invalidate({ classId });
+            setShowCSVImport(false);
+          }}
+        />
+      )}
+
       {/* Assessment Details Dialog */}
       {detailsAssessment && (
         <AssessmentDetailsDialog
@@ -946,6 +976,288 @@ function AssessmentDetailsDialog({
             </Button>
           )}
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── CSV Score Import Wizard ─────────────────────────────────────────────────
+
+type CSVScoreRow = Record<string, string>;
+
+function CSVScoreImportWizard({
+  classId,
+  assessments,
+  initialAssessmentId,
+  onClose,
+  onSuccess,
+}: {
+  classId: number;
+  assessments: Assessment[];
+  initialAssessmentId: number;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [csvData, setCsvData] = useState<CSVScoreRow[]>([]);
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [identifierCol, setIdentifierCol] = useState("");
+  const [scoreCol, setScoreCol] = useState("");
+  const [selectedAssessmentId, setSelectedAssessmentId] = useState<number>(initialAssessmentId);
+  const [fileName, setFileName] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const selectedAssessment = assessments.find((a) => a.id === selectedAssessmentId);
+
+  const importMutation = trpc.grades.bulkImportFromCSV.useMutation({
+    onSuccess: (data) => {
+      const parts: string[] = [];
+      if (data.imported > 0) parts.push(`${data.imported} score${data.imported !== 1 ? "s" : ""} imported`);
+      if (data.skipped.length > 0) parts.push(`${data.skipped.length} skipped (blank)`);
+      if (data.unmatched.length > 0) parts.push(`${data.unmatched.length} unmatched`);
+      toast.success(parts.join(" · ") || "Import complete");
+      if (data.unmatched.length > 0) {
+        toast.warning(`Unmatched: ${data.unmatched.slice(0, 3).join(", ")}${data.unmatched.length > 3 ? "…" : ""}`);
+      }
+      onSuccess();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleFile = useCallback((file: File) => {
+    if (!file) return;
+    setFileName(file.name);
+    Papa.parse<CSVScoreRow>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => {
+        setCsvData(results.data);
+        setHeaders(results.meta.fields ?? []);
+        // Auto-detect identifier column (name/student) and score column
+        const idGuess = results.meta.fields?.find((f) => /name|student|id/i.test(f)) ?? "";
+        const scoreGuess = results.meta.fields?.find((f) => /score|mark|grade|result/i.test(f)) ?? "";
+        setIdentifierCol(idGuess);
+        setScoreCol(scoreGuess);
+        setStep(2);
+      },
+      error: () => toast.error("Failed to parse CSV file"),
+    });
+  }, []);
+
+  // Preview: map rows using selected columns
+  const previewRows = csvData
+    .filter((row) => identifierCol && row[identifierCol]?.trim())
+    .map((row) => ({
+      identifier: row[identifierCol]?.trim() ?? "",
+      scoreRaw: scoreCol ? (row[scoreCol]?.trim() ?? "") : "",
+    }));
+
+  function handleImport() {
+    if (!selectedAssessmentId || previewRows.length === 0) return;
+    importMutation.mutate({
+      classId,
+      assessmentId: selectedAssessmentId,
+      rows: previewRows,
+    });
+  }
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Import Scores from CSV</DialogTitle>
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 pt-2">
+            {[1, 2, 3].map((s) => (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors ${
+                    step === s
+                      ? "bg-primary text-primary-foreground"
+                      : step > s
+                      ? "bg-green-500 text-white"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {step > s ? "✓" : s}
+                </div>
+                <span className={`text-xs ${step === s ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                  {s === 1 ? "Upload" : s === 2 ? "Map Columns" : "Preview & Import"}
+                </span>
+                {s < 3 && <div className="w-8 h-px bg-border" />}
+              </div>
+            ))}
+          </div>
+        </DialogHeader>
+
+        {/* Step 1: Upload */}
+        {step === 1 && (
+          <div className="py-4 space-y-4">
+            <div
+              className={`border-2 border-dashed rounded-xl p-10 text-center transition-colors cursor-pointer ${
+                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50"
+              }`}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const file = e.dataTransfer.files[0];
+                if (file) handleFile(file);
+              }}
+              onClick={() => fileRef.current?.click()}
+            >
+              <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+              <p className="font-medium text-foreground">Drop your CSV file here</p>
+              <p className="text-sm text-muted-foreground mt-1">or click to browse</p>
+              <p className="text-xs text-muted-foreground mt-3">
+                CSV must have a student name/ID column and a score column.
+              </p>
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleFile(file);
+              }}
+            />
+            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700 space-y-1">
+              <p className="font-medium">Expected CSV format:</p>
+              <p>Two columns minimum: one for student identifier (name or Student ID code) and one for the score.</p>
+              <p>Example: <code className="bg-blue-100 px-1 rounded">studentName,score</code> or <code className="bg-blue-100 px-1 rounded">name,Quiz 1 — Algebra</code></p>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Map Columns */}
+        {step === 2 && (
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{fileName}</span> — {csvData.length} rows detected.
+              Map the columns and select which assessment to import scores into.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Student Identifier Column</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  value={identifierCol}
+                  onChange={(e) => setIdentifierCol(e.target.value)}
+                >
+                  <option value="">— select column —</option>
+                  {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">Student name or Student ID code</p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm">Score Column</Label>
+                <select
+                  className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                  value={scoreCol}
+                  onChange={(e) => setScoreCol(e.target.value)}
+                >
+                  <option value="">— select column —</option>
+                  {headers.map((h) => <option key={h} value={h}>{h}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">Numeric score (blank rows will be skipped)</p>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-sm">Import into Assessment</Label>
+              <select
+                className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+                value={selectedAssessmentId}
+                onChange={(e) => setSelectedAssessmentId(Number(e.target.value))}
+              >
+                {assessments.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} (max {a.maxScore})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button variant="outline" onClick={() => setStep(1)}>Back</Button>
+              <Button
+                onClick={() => setStep(3)}
+                disabled={!identifierCol || !scoreCol || !selectedAssessmentId}
+              >
+                Preview Import
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+
+        {/* Step 3: Preview & Import */}
+        {step === 3 && (
+          <div className="py-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                <span className="font-semibold text-foreground">{previewRows.length} rows</span> ready to import into{" "}
+                <span className="font-semibold text-foreground">{selectedAssessment?.name}</span>{" "}
+                (max score: {selectedAssessment?.maxScore})
+              </p>
+            </div>
+
+            <div className="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-muted-foreground">Student Identifier</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Score</th>
+                    <th className="px-3 py-2 text-right font-medium text-muted-foreground">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {previewRows.map((row, i) => {
+                    const score = parseFloat(row.scoreRaw);
+                    const isBlank = row.scoreRaw.trim() === "";
+                    const isInvalid = !isBlank && (isNaN(score) || score < 0 || score > (selectedAssessment?.maxScore ?? Infinity));
+                    return (
+                      <tr key={i} className={isInvalid ? "bg-red-50" : isBlank ? "bg-muted/30" : ""}>
+                        <td className="px-3 py-2 text-foreground">{row.identifier}</td>
+                        <td className="px-3 py-2 text-right font-mono">
+                          {isBlank ? <span className="text-muted-foreground">—</span> : row.scoreRaw}
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {isBlank ? (
+                            <Badge variant="outline" className="text-xs">Skip</Badge>
+                          ) : isInvalid ? (
+                            <Badge variant="destructive" className="text-xs">Invalid</Badge>
+                          ) : (
+                            <Badge className="text-xs bg-green-100 text-green-700 border-green-200">Import</Badge>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <DialogFooter className="pt-2">
+              <Button variant="outline" onClick={() => setStep(2)}>Back</Button>
+              <Button
+                onClick={handleImport}
+                disabled={importMutation.isPending || previewRows.filter((r) => r.scoreRaw.trim() !== "").length === 0}
+              >
+                {importMutation.isPending ? (
+                  <><span className="mr-2 h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent inline-block" />Importing...</>
+                ) : (
+                  <>Confirm Import</>
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

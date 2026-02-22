@@ -560,6 +560,81 @@ export const appRouter = router({
         await upsertGradesBulk(input.entries);
         return { success: true };
       }),
+
+    // CSV score import: match students by name (case-insensitive) or studentId string,
+    // then upsert grades for a given assessment.
+    bulkImportFromCSV: protectedProcedure
+      .input(
+        z.object({
+          classId: z.number(),
+          assessmentId: z.number(),
+          // Each row from the CSV: identifier (student name or studentId code) + score string
+          rows: z.array(
+            z.object({
+              identifier: z.string(), // student name or studentId
+              scoreRaw: z.string(),   // raw string from CSV, may be empty
+            })
+          ),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const cls = await getClassById(input.classId);
+        if (!cls) throw new TRPCError({ code: "NOT_FOUND", message: "Class not found" });
+        if (ctx.user.eduRole !== "admin" && ctx.user.role !== "admin" && cls.teacherId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const assessment = await getAssessmentById(input.assessmentId);
+        if (!assessment) throw new TRPCError({ code: "NOT_FOUND", message: "Assessment not found" });
+
+        const students = await getStudentsByClass(input.classId);
+
+        const matched: { studentId: number; assessmentId: number; score: number | null }[] = [];
+        const unmatched: string[] = [];
+        const skipped: string[] = [];
+
+        for (const row of input.rows) {
+          const id = row.identifier.trim();
+          if (!id) continue;
+
+          // Try match by studentId code first (exact), then by name (case-insensitive)
+          const student =
+            students.find((s) => s.studentId.toLowerCase() === id.toLowerCase()) ??
+            students.find((s) => s.name.toLowerCase() === id.toLowerCase());
+
+          if (!student) {
+            unmatched.push(id);
+            continue;
+          }
+
+          // Parse score — blank/empty means clear the score (null)
+          const trimmed = row.scoreRaw.trim();
+          if (trimmed === "") {
+            skipped.push(id);
+            continue;
+          }
+          const score = parseFloat(trimmed);
+          if (isNaN(score)) {
+            unmatched.push(`${id} (invalid score: "${trimmed}")`);
+            continue;
+          }
+          if (score < 0 || score > assessment.maxScore) {
+            unmatched.push(`${id} (score ${score} out of range 0–${assessment.maxScore})`);
+            continue;
+          }
+
+          matched.push({ studentId: student.id, assessmentId: input.assessmentId, score });
+        }
+
+        if (matched.length > 0) {
+          await upsertGradesBulk(matched);
+        }
+
+        return {
+          imported: matched.length,
+          unmatched,
+          skipped,
+        };
+      }),
   }),
 
   // ─── Teacher Notes ──────────────────────────────────────────────────────────

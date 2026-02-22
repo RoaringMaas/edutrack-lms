@@ -109,3 +109,10 @@
 - [x] tRPC: auth.changePassword (protected) — verify current password, hash new password, update DB
 - [x] Settings page: Change Password section (current password, new password, confirm new password, show/hide toggles)
 - [x] Vitest tests for auth.changePassword (3 tests) — 40 total tests passing
+
+## CSV Score Import Feature
+- [x] tRPC: grades.bulkImportFromCSV — accept array of {identifier, scoreRaw}, match by name or studentId
+- [x] CSV score import wizard in AssessmentScoreboard (upload → map columns → preview → import)
+- [x] Auto-match students by name (case-insensitive) or studentId code
+- [x] Show unmatched/invalid/skip status per row in preview step
+- [x] Vitest tests for grades.bulkImportFromCSV (3 tests) — 43 total tests passing

@@ -687,3 +687,82 @@ describe("auth.changePassword", () => {
     ).rejects.toThrow(TRPCError);
   });
 });
+
+// ─── grades.bulkImportFromCSV ─────────────────────────────────────────────────
+
+describe("grades.bulkImportFromCSV", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  const MOCK_CLASS = { id: 1, teacherId: 1, subjectName: "Math", gradeLevel: "10", section: "A", academicYear: "2024-2025", term: "Term 1", alertThreshold: 60, createdAt: new Date(), updatedAt: new Date() };
+  const MOCK_ASSESSMENT = { id: 10, classId: 1, name: "Quiz 1", type: "quiz", maxScore: 20, dateTaken: null, description: null, filePath: null, fileUrl: null, fileName: null, createdAt: new Date(), updatedAt: new Date() };
+  const MOCK_STUDENTS = [
+    { id: 1, classId: 1, studentId: "10A-001", name: "Aisha Rahman", email: null, shareToken: null, createdAt: new Date() },
+    { id: 2, classId: 1, studentId: "10A-002", name: "Benjamin Tan", email: null, shareToken: null, createdAt: new Date() },
+  ];
+
+  it("imports matched rows and returns correct counts", async () => {
+    vi.mocked(db.getClassById).mockResolvedValue(MOCK_CLASS as any);
+    vi.mocked(db.getAssessmentById).mockResolvedValue(MOCK_ASSESSMENT as any);
+    vi.mocked(db.getStudentsByClass).mockResolvedValue(MOCK_STUDENTS as any);
+    vi.mocked(db.upsertGradesBulk).mockResolvedValue(undefined);
+
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.grades.bulkImportFromCSV({
+      classId: 1,
+      assessmentId: 10,
+      rows: [
+        { identifier: "Aisha Rahman", scoreRaw: "17.5" },
+        { identifier: "Benjamin Tan", scoreRaw: "14" },
+      ],
+    });
+
+    expect(result.imported).toBe(2);
+    expect(result.unmatched).toHaveLength(0);
+    expect(result.skipped).toHaveLength(0);
+    expect(db.upsertGradesBulk).toHaveBeenCalledWith([
+      { studentId: 1, assessmentId: 10, score: 17.5 },
+      { studentId: 2, assessmentId: 10, score: 14 },
+    ]);
+  });
+
+  it("skips blank score rows and reports unmatched names", async () => {
+    vi.mocked(db.getClassById).mockResolvedValue(MOCK_CLASS as any);
+    vi.mocked(db.getAssessmentById).mockResolvedValue(MOCK_ASSESSMENT as any);
+    vi.mocked(db.getStudentsByClass).mockResolvedValue(MOCK_STUDENTS as any);
+    vi.mocked(db.upsertGradesBulk).mockResolvedValue(undefined);
+
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.grades.bulkImportFromCSV({
+      classId: 1,
+      assessmentId: 10,
+      rows: [
+        { identifier: "Aisha Rahman", scoreRaw: "" },         // blank → skip
+        { identifier: "Unknown Student", scoreRaw: "15" },    // no match → unmatched
+        { identifier: "Benjamin Tan", scoreRaw: "18" },
+      ],
+    });
+
+    expect(result.imported).toBe(1);
+    expect(result.skipped).toContain("Aisha Rahman");
+    expect(result.unmatched).toContain("Unknown Student");
+  });
+
+  it("rejects scores outside 0–maxScore range", async () => {
+    vi.mocked(db.getClassById).mockResolvedValue(MOCK_CLASS as any);
+    vi.mocked(db.getAssessmentById).mockResolvedValue(MOCK_ASSESSMENT as any);
+    vi.mocked(db.getStudentsByClass).mockResolvedValue(MOCK_STUDENTS as any);
+    vi.mocked(db.upsertGradesBulk).mockResolvedValue(undefined);
+
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.grades.bulkImportFromCSV({
+      classId: 1,
+      assessmentId: 10,
+      rows: [
+        { identifier: "Aisha Rahman", scoreRaw: "25" }, // exceeds maxScore of 20
+      ],
+    });
+
+    expect(result.imported).toBe(0);
+    expect(result.unmatched[0]).toContain("Aisha Rahman");
+  });
+});
