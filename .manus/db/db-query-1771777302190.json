@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO users (openId, name, email, loginMethod, role, eduRole, accountStatus, passwordHash, createdAt, updatedAt, lastSignedIn) VALUES ('test-teacher-001', 'Sarah Johnson', 'sarah.johnson@school.edu', 'email', 'user', 'teacher', 'approved', '$2b$12$mv02cAB6GjyWnLRazUzSxOZKlfng2wyrHU78oyZoWNuCn.oeB3r4K', NOW(), NOW(), NOW())",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute INSERT INTO users (openId, name, email, loginMethod, role, eduRole, accountStatus, passwordHash, createdAt, updatedAt, lastSignedIn) VALUES ('test-teacher-001', 'Sarah Johnson', 'sarah.johnson@school.edu', 'email', 'user', 'teacher', 'approved', '$2b$12$mv02cAB6GjyWnLRazUzSxOZKlfng2wyrHU78oyZoWNuCn.oeB3r4K', NOW(), NOW(), NOW())",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1586
+}

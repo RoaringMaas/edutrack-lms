@@ -709,12 +709,12 @@ function CSVImportWizard({
               </div>
               <div className="space-y-1.5">
                 <Label>Email Column (optional)</Label>
-                <Select value={emailCol} onValueChange={setEmailCol}>
+                <Select value={emailCol || "__none__"} onValueChange={(v) => setEmailCol(v === "__none__" ? "" : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="None" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="__none__">None</SelectItem>
                     {headers.map((h) => (
                       <SelectItem key={h} value={h}>{h}</SelectItem>
                     ))}

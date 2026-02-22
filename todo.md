@@ -116,3 +116,6 @@
 - [x] Auto-match students by name (case-insensitive) or studentId code
 - [x] Show unmatched/invalid/skip status per row in preview step
 - [x] Vitest tests for grades.bulkImportFromCSV (3 tests) — 43 total tests passing
+
+## Bug Fixes (Round 2)
+- [x] Fix empty Select.Item value crash in CSV student import wizard (column mapping step) — replaced empty string value with __none__ sentinel
