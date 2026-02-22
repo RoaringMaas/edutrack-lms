@@ -43,6 +43,8 @@ vi.mock("./db", () => ({
   upsertTeacherNotes: vi.fn(),
   getAllUsers: vi.fn(),
   updateUserEduRole: vi.fn(),
+  getStudentByShareToken: vi.fn(),
+  setStudentShareToken: vi.fn(),
 }));
 
 vi.mock("./storage", () => ({
@@ -104,6 +106,7 @@ const SAMPLE_STUDENT = {
   studentId: "MAT0001",
   name: "Alice Smith",
   email: "alice@test.com",
+  shareToken: null as string | null,
   createdAt: new Date(),
 };
 
@@ -390,5 +393,109 @@ describe("admin.listUsers", () => {
   it("throws FORBIDDEN for non-admin user", async () => {
     const caller = appRouter.createCaller(makeTeacherCtx());
     await expect(caller.admin.listUsers()).rejects.toThrow(TRPCError);
+  });
+});
+
+// ─── Share Links ──────────────────────────────────────────────────────────
+
+describe("shareLinks.generate", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("generates a share token for a student owned by the teacher", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue(SAMPLE_STUDENT);
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.setStudentShareToken).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.shareLinks.generate({ studentId: 5 });
+    expect(result.token).toBeDefined();
+    expect(typeof result.token).toBe("string");
+    expect(result.token.length).toBeGreaterThan(0);
+    expect(db.setStudentShareToken).toHaveBeenCalledWith(5, expect.any(String));
+  });
+
+  it("throws NOT_FOUND when student does not exist", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    await expect(caller.shareLinks.generate({ studentId: 999 })).rejects.toThrow(TRPCError);
+  });
+
+  it("throws FORBIDDEN when teacher does not own the class", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue(SAMPLE_STUDENT);
+    vi.mocked(db.getClassById).mockResolvedValue({ ...SAMPLE_CLASS, teacherId: 999 });
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    await expect(caller.shareLinks.generate({ studentId: 5 })).rejects.toThrow(TRPCError);
+  });
+});
+
+describe("shareLinks.revoke", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("revokes a share token for a student owned by the teacher", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue({ ...SAMPLE_STUDENT, shareToken: "abc123" });
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.setStudentShareToken).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.shareLinks.revoke({ studentId: 5 });
+    expect(result.success).toBe(true);
+    expect(db.setStudentShareToken).toHaveBeenCalledWith(5, null);
+  });
+});
+
+// ─── Parent View (public) ─────────────────────────────────────────────────
+
+function makePublicCtx(): TrpcContext {
+  return {
+    user: null,
+    req: { protocol: "https", headers: {} } as any,
+    res: { clearCookie: vi.fn() } as any,
+  };
+}
+
+describe("parentView.getByToken", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("returns student summary when token is valid", async () => {
+    vi.mocked(db.getStudentByShareToken).mockResolvedValue({ ...SAMPLE_STUDENT, shareToken: "valid-token" });
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.getAssessmentsByClass).mockResolvedValue([SAMPLE_ASSESSMENT]);
+    vi.mocked(db.getAssignmentsByClass).mockResolvedValue([SAMPLE_ASSIGNMENT]);
+    vi.mocked(db.getSubmissionsByClass).mockResolvedValue([]);
+    vi.mocked(db.getGradesByStudent).mockResolvedValue([]);
+
+    const caller = appRouter.createCaller(makePublicCtx());
+    const result = await caller.parentView.getByToken({ token: "valid-token" });
+
+    expect(result.student.name).toBe("Alice Smith");
+    expect(result.student.studentId).toBe("MAT0001");
+    expect(result.class.subjectName).toBe("Mathematics");
+    expect(result.grades.summary).toHaveLength(1);
+    expect(result.homework.summary).toHaveLength(1);
+    expect(result.homework.totalAssignments).toBe(1);
+  });
+
+  it("throws NOT_FOUND when token is invalid", async () => {
+    vi.mocked(db.getStudentByShareToken).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(caller.parentView.getByToken({ token: "bad-token" })).rejects.toThrow(TRPCError);
+  });
+
+  it("computes term average and submission rate correctly", async () => {
+    vi.mocked(db.getStudentByShareToken).mockResolvedValue({ ...SAMPLE_STUDENT, shareToken: "t" });
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.getAssessmentsByClass).mockResolvedValue([SAMPLE_ASSESSMENT]);
+    vi.mocked(db.getAssignmentsByClass).mockResolvedValue([SAMPLE_ASSIGNMENT]);
+    vi.mocked(db.getSubmissionsByClass).mockResolvedValue([
+      { id: 1, studentId: 5, assignmentId: 7, status: "submitted", createdAt: new Date(), updatedAt: new Date() },
+    ]);
+    vi.mocked(db.getGradesByStudent).mockResolvedValue([
+      { id: 1, studentId: 5, assessmentId: 3, score: 85, createdAt: new Date() },
+    ]);
+
+    const caller = appRouter.createCaller(makePublicCtx());
+    const result = await caller.parentView.getByToken({ token: "t" });
+
+    expect(result.grades.termAverage).toBe(85); // 85/100 = 85%
+    expect(result.homework.submissionRate).toBe(100); // 1/1 = 100%
+    expect(result.homework.submittedCount).toBe(1);
   });
 });

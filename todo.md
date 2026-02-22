@@ -74,3 +74,13 @@
 - [x] Empty state handling for all pages
 - [x] Loading skeleton states
 - [x] Save checkpoint and deliver
+
+## Parent-Facing View (Shareable Read-Only Links)
+- [x] Add shareToken column to students table in schema
+- [x] Add DB helpers: getStudentByShareToken, setStudentShareToken
+- [x] Add public tRPC procedure (parentView.getByToken) to fetch student data by share token (no auth)
+- [x] Add tRPC procedures for teachers to generate/revoke share links (shareLinks.generate, shareLinks.revoke)
+- [x] Build public /parent/:token page with read-only homework + grade summary
+- [x] Add share link button/dialog in teacher's student roster (ClassDetail)
+- [x] Add copy-to-clipboard, regenerate, and revoke functionality
+- [x] Write vitest tests for share token procedures (7 new tests, 28 total)

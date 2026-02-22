@@ -12,8 +12,9 @@ import Students from "./pages/Students";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import ParentView from "./pages/ParentView";
 
-function Router() {
+function DashboardRouter() {
   return (
     <DashboardLayout>
       <Switch>
@@ -30,6 +31,17 @@ function Router() {
         <Route component={NotFound} />
       </Switch>
     </DashboardLayout>
+  );
+}
+
+function Router() {
+  return (
+    <Switch>
+      {/* Public parent-facing view — no auth, no sidebar */}
+      <Route path="/parent/:token" component={ParentView} />
+      {/* All other routes go through the dashboard layout */}
+      <Route component={DashboardRouter} />
+    </Switch>
   );
 }
 

@@ -299,6 +299,21 @@ export async function upsertGradesBulk(
   }
 }
 
+// ─── Parent Share Tokens ─────────────────────────────────────────────────────
+
+export async function getStudentByShareToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(students).where(eq(students.shareToken, token)).limit(1);
+  return result[0];
+}
+
+export async function setStudentShareToken(studentId: number, token: string | null) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(students).set({ shareToken: token }).where(eq(students.id, studentId));
+}
+
 // ─── Teacher Notes ────────────────────────────────────────────────────────────
 
 export async function getTeacherNotes(classId: number): Promise<TeacherNote | undefined> {

@@ -55,6 +55,11 @@ import {
   Search,
   X,
   Eye,
+  Share2,
+  Link2,
+  Copy,
+  LinkIcon,
+  Unlink,
 } from "lucide-react";
 import Papa from "papaparse";
 import HomeworkTracker from "./HomeworkTracker";
@@ -159,6 +164,7 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [shareStudent, setShareStudent] = useState<any | null>(null);
 
   const utils = trpc.useUtils();
   const { data: students = [], isLoading } = trpc.students.list.useQuery({ classId });
@@ -191,6 +197,40 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
     },
     onError: (e) => toast.error(e.message),
   });
+
+  const generateLinkMutation = trpc.shareLinks.generate.useMutation({
+    onSuccess: (data) => {
+      utils.students.list.invalidate({ classId });
+      if (shareStudent) {
+        setShareStudent({ ...shareStudent, shareToken: data.token });
+      }
+      toast.success("Share link generated");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const revokeLinkMutation = trpc.shareLinks.revoke.useMutation({
+    onSuccess: () => {
+      utils.students.list.invalidate({ classId });
+      if (shareStudent) {
+        setShareStudent({ ...shareStudent, shareToken: null });
+      }
+      toast.success("Share link revoked");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const getShareUrl = (token: string) => {
+    return `${window.location.origin}/parent/${token}`;
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Link copied to clipboard");
+    }).catch(() => {
+      toast.error("Failed to copy");
+    });
+  };
 
   const filtered = students.filter((s) =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -284,6 +324,15 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
                   {!isAdmin && (
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          title="Share with parent"
+                          onClick={() => setShareStudent(student)}
+                        >
+                          <Share2 className={`h-3.5 w-3.5 ${student.shareToken ? 'text-blue-600' : ''}`} />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -403,6 +452,96 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Share Link Dialog */}
+      <Dialog open={!!shareStudent} onOpenChange={(open) => !open && setShareStudent(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5 text-blue-600" />
+              Parent Share Link
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
+                {shareStudent?.name?.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2)}
+              </div>
+              <div>
+                <p className="font-medium">{shareStudent?.name}</p>
+                <p className="text-xs text-muted-foreground">{shareStudent?.studentId}</p>
+              </div>
+            </div>
+
+            {shareStudent?.shareToken ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-2.5 bg-green-50 border border-green-200 rounded-lg">
+                  <Link2 className="h-4 w-4 text-green-600 shrink-0" />
+                  <p className="text-sm text-green-700">Share link is active</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    readOnly
+                    value={getShareUrl(shareStudent.shareToken)}
+                    className="text-xs font-mono bg-muted"
+                  />
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => copyToClipboard(getShareUrl(shareStudent.shareToken))}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Parents can view this student's grades and homework status in real-time using this link. No login required.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1"
+                    onClick={() => generateLinkMutation.mutate({ studentId: shareStudent.id })}
+                    disabled={generateLinkMutation.isPending}
+                  >
+                    <LinkIcon className="h-3.5 w-3.5" />
+                    Regenerate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 flex-1 text-destructive hover:text-destructive"
+                    onClick={() => revokeLinkMutation.mutate({ studentId: shareStudent.id })}
+                    disabled={revokeLinkMutation.isPending}
+                  >
+                    <Unlink className="h-3.5 w-3.5" />
+                    Revoke Link
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-2.5 bg-muted rounded-lg">
+                  <Unlink className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <p className="text-sm text-muted-foreground">No share link generated yet</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Generate a read-only link that parents can use to view this student's grades and homework submissions. The link requires no login.
+                </p>
+                <Button
+                  className="w-full gap-2"
+                  onClick={() => generateLinkMutation.mutate({ studentId: shareStudent.id })}
+                  disabled={generateLinkMutation.isPending}
+                >
+                  <Link2 className="h-4 w-4" />
+                  Generate Share Link
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* CSV Import Wizard */}
       {showImport && (

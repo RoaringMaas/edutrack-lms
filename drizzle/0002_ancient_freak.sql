@@ -1,0 +1,1 @@
+ALTER TABLE `students` ADD `shareToken` varchar(32);

@@ -37,6 +37,8 @@ import {
   upsertTeacherNotes,
   getAllUsers,
   updateUserEduRole,
+  getStudentByShareToken,
+  setStudentShareToken,
 } from "./db";
 import { nanoid } from "nanoid";
 
@@ -470,6 +472,115 @@ export const appRouter = router({
         }
         await updateUserEduRole(input.userId, input.eduRole);
         return { success: true };
+      }),
+  }),
+
+  // ─── Parent Share Links (teacher-facing) ────────────────────────────────────
+
+  shareLinks: router({
+    generate: protectedProcedure
+      .input(z.object({ studentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const student = await getStudentById(input.studentId);
+        if (!student) throw new TRPCError({ code: "NOT_FOUND" });
+        const cls = await getClassById(student.classId);
+        if (cls && ctx.user.eduRole !== "admin" && ctx.user.role !== "admin" && cls.teacherId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        const token = nanoid(16);
+        await setStudentShareToken(input.studentId, token);
+        return { token };
+      }),
+
+    revoke: protectedProcedure
+      .input(z.object({ studentId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const student = await getStudentById(input.studentId);
+        if (!student) throw new TRPCError({ code: "NOT_FOUND" });
+        const cls = await getClassById(student.classId);
+        if (cls && ctx.user.eduRole !== "admin" && ctx.user.role !== "admin" && cls.teacherId !== ctx.user.id) {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        await setStudentShareToken(input.studentId, null);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Parent View (public, no auth required) ─────────────────────────────────
+
+  parentView: router({
+    getByToken: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const student = await getStudentByShareToken(input.token);
+        if (!student) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid or expired link" });
+
+        const cls = await getClassById(student.classId);
+        if (!cls) throw new TRPCError({ code: "NOT_FOUND" });
+
+        const [allAssessments, allAssignments, allSubmissions, studentGrades] = await Promise.all([
+          getAssessmentsByClass(student.classId),
+          getAssignmentsByClass(student.classId),
+          getSubmissionsByClass(student.classId),
+          getGradesByStudent(student.id),
+        ]);
+
+        // Grade summary
+        const gradeSummary = allAssessments.map((a) => {
+          const grade = studentGrades.find((g) => g.assessmentId === a.id);
+          const pct = grade?.score != null ? (grade.score / a.maxScore) * 100 : null;
+          return {
+            name: a.name,
+            type: a.type,
+            score: grade?.score ?? null,
+            maxScore: a.maxScore,
+            percentage: pct != null ? Math.round(pct) : null,
+            dateTaken: a.dateTaken,
+          };
+        });
+
+        const validGrades = gradeSummary.filter((g) => g.percentage != null);
+        const termAverage = validGrades.length > 0
+          ? Math.round(validGrades.reduce((s, g) => s + (g.percentage ?? 0), 0) / validGrades.length)
+          : null;
+
+        // Homework summary
+        const studentSubmissions = allSubmissions.filter((s) => s.studentId === student.id);
+        const homeworkSummary = allAssignments.map((a) => {
+          const sub = studentSubmissions.find((s) => s.assignmentId === a.id);
+          return {
+            name: a.name,
+            weekLabel: a.weekLabel,
+            dueDate: a.dueDate,
+            status: sub?.status ?? "pending",
+          };
+        });
+
+        const totalAssignments = allAssignments.length;
+        const submittedCount = studentSubmissions.filter((s) => s.status === "submitted" || s.status === "late").length;
+        const submissionRate = totalAssignments > 0 ? Math.round((submittedCount / totalAssignments) * 100) : null;
+        const missingCount = studentSubmissions.filter((s) => s.status === "missing").length;
+        const lateCount = studentSubmissions.filter((s) => s.status === "late").length;
+
+        return {
+          student: { name: student.name, studentId: student.studentId },
+          class: {
+            subjectName: cls.subjectName,
+            gradeLevel: cls.gradeLevel,
+            section: cls.section,
+            term: cls.term,
+            academicYear: cls.academicYear,
+          },
+          grades: { summary: gradeSummary, termAverage },
+          homework: {
+            summary: homeworkSummary,
+            submissionRate,
+            totalAssignments,
+            submittedCount,
+            missingCount,
+            lateCount,
+          },
+        };
       }),
   }),
 

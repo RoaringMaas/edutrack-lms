@@ -56,6 +56,7 @@ export const students = mysqlTable("students", {
   studentId: varchar("studentId", { length: 32 }).notNull(), // auto-generated
   name: varchar("name", { length: 128 }).notNull(),
   email: varchar("email", { length: 320 }),
+  shareToken: varchar("shareToken", { length: 32 }), // unique token for parent-facing read-only link
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
