@@ -100,3 +100,6 @@
 - [x] Admin approval queue in Settings: pending teachers list with Approve/Reject buttons
 - [x] Active user management: re-approve rejected teachers, change roles
 - [x] Vitest tests: auth.register (3), auth.login (3), admin.updateAccountStatus (3) — 37 total tests passing
+
+## Bug Fixes
+- [x] Fix "Invalid or expired link" error on /parent/:token page — guard against unresolved :token placeholder in preview mode, strip query params from token segment

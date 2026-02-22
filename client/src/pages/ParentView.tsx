@@ -39,7 +39,10 @@ function getScoreBg(pct: number | null) {
 
 export default function ParentView() {
   const params = useParams<{ token: string }>();
-  const token = params.token ?? "";
+  // Strip any query parameters that may be appended to the token segment,
+  // and guard against unresolved route placeholders (e.g. ":token" in preview mode).
+  const rawToken = params.token ?? "";
+  const token = rawToken.startsWith(":") ? "" : rawToken.split("?")[0];
 
   const { data, isLoading, error } = trpc.parentView.getByToken.useQuery(
     { token },
