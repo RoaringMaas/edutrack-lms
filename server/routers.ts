@@ -43,6 +43,7 @@ import {
   createUserWithPassword,
   updateUserAccountStatus,
   updateUserLastSignedIn,
+  updateUserPassword,
 } from "./db";
 import { nanoid } from "nanoid";
 import bcrypt from "bcryptjs";
@@ -158,6 +159,31 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    changePassword: protectedProcedure
+      .input(
+        z.object({
+          currentPassword: z.string().min(1),
+          newPassword: z.string().min(8, "New password must be at least 8 characters"),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const user = await getUserByEmail(ctx.user.email ?? "");
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+        if (!user.passwordHash) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "This account does not use email/password login",
+          });
+        }
+        const valid = await bcrypt.compare(input.currentPassword, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({ code: "UNAUTHORIZED", message: "Current password is incorrect" });
+        }
+        const newHash = await bcrypt.hash(input.newPassword, 12);
+        await updateUserPassword(user.id, newHash);
+        return { success: true } as const;
+      }),
   }),
 
   // ─── Classes ────────────────────────────────────────────────────────────────

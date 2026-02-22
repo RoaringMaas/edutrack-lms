@@ -49,6 +49,7 @@ vi.mock("./db", () => ({
   getUserByEmail: vi.fn(),
   createUserWithPassword: vi.fn(),
   updateUserLastSignedIn: vi.fn(),
+  updateUserPassword: vi.fn(),
 }));
 
 vi.mock("./storage", () => ({
@@ -636,6 +637,53 @@ describe("admin.updateAccountStatus", () => {
     const caller = appRouter.createCaller(makeTeacherCtx());
     await expect(
       caller.admin.updateAccountStatus({ userId: 10, accountStatus: "approved" })
+    ).rejects.toThrow(TRPCError);
+  });
+});
+
+// ─── Change Password ──────────────────────────────────────────────────────────
+
+describe("auth.changePassword", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  // bcrypt hash of "correctpass" pre-computed for test speed
+  const HASHED_CORRECT = "$2b$12$H/AHfHNAdIaA0ALKH3.C9.XPk/wHdyqTz1/.S7ZR0CqvuWyAX95fK";
+
+  const APPROVED_USER = {
+    id: 1,
+    openId: "email_abc",
+    email: "teacher@school.edu",
+    name: "Teacher",
+    passwordHash: HASHED_CORRECT,
+    accountStatus: "approved",
+    role: "user",
+    eduRole: "teacher",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    lastSignedIn: new Date(),
+  } as any;
+
+  it("throws UNAUTHORIZED when current password is wrong", async () => {
+    vi.mocked(db.getUserByEmail).mockResolvedValue(APPROVED_USER);
+    const caller = appRouter.createCaller(makeTeacherCtx({ email: "teacher@school.edu" }));
+    await expect(
+      caller.auth.changePassword({ currentPassword: "wrongpass", newPassword: "NewPass2026!" })
+    ).rejects.toThrow(TRPCError);
+    expect(db.updateUserPassword).not.toHaveBeenCalled();
+  });
+
+  it("throws validation error when new password is too short", async () => {
+    const caller = appRouter.createCaller(makeTeacherCtx({ email: "teacher@school.edu" }));
+    await expect(
+      caller.auth.changePassword({ currentPassword: "anything", newPassword: "short" })
+    ).rejects.toThrow();
+  });
+
+  it("throws BAD_REQUEST when account has no password hash (OAuth account)", async () => {
+    vi.mocked(db.getUserByEmail).mockResolvedValue({ ...APPROVED_USER, passwordHash: null });
+    const caller = appRouter.createCaller(makeTeacherCtx({ email: "teacher@school.edu" }));
+    await expect(
+      caller.auth.changePassword({ currentPassword: "anything", newPassword: "NewPass2026!" })
     ).rejects.toThrow(TRPCError);
   });
 });

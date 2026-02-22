@@ -148,6 +148,12 @@ export async function updateUserLastSignedIn(userId: number) {
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
 }
 
+export async function updateUserPassword(userId: number, passwordHash: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(users).set({ passwordHash }).where(eq(users.id, userId));
+}
+
 // ─── Classes ──────────────────────────────────────────────────────────────────
 
 export async function getClassesByTeacher(teacherId: number): Promise<Class[]> {

@@ -103,3 +103,9 @@
 
 ## Bug Fixes
 - [x] Fix "Invalid or expired link" error on /parent/:token page — guard against unresolved :token placeholder in preview mode, strip query params from token segment
+
+## Change Password Feature
+- [x] DB helper: updateUserPassword(userId, newHash)
+- [x] tRPC: auth.changePassword (protected) — verify current password, hash new password, update DB
+- [x] Settings page: Change Password section (current password, new password, confirm new password, show/hide toggles)
+- [x] Vitest tests for auth.changePassword (3 tests) — 40 total tests passing
