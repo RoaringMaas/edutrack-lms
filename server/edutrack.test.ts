@@ -43,8 +43,12 @@ vi.mock("./db", () => ({
   upsertTeacherNotes: vi.fn(),
   getAllUsers: vi.fn(),
   updateUserEduRole: vi.fn(),
+  updateUserAccountStatus: vi.fn(),
   getStudentByShareToken: vi.fn(),
   setStudentShareToken: vi.fn(),
+  getUserByEmail: vi.fn(),
+  createUserWithPassword: vi.fn(),
+  updateUserLastSignedIn: vi.fn(),
 }));
 
 vi.mock("./storage", () => ({
@@ -497,5 +501,141 @@ describe("parentView.getByToken", () => {
     expect(result.grades.termAverage).toBe(85); // 85/100 = 85%
     expect(result.homework.submissionRate).toBe(100); // 1/1 = 100%
     expect(result.homework.submittedCount).toBe(1);
+  });
+});
+
+// ─── Email/Password Auth ──────────────────────────────────────────────────────
+
+describe("auth.register", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("creates a new user and returns success when email is not taken", async () => {
+    vi.mocked(db.getUserByEmail).mockResolvedValue(undefined);
+    vi.mocked(db.createUserWithPassword).mockResolvedValue(42);
+    const caller = appRouter.createCaller(makePublicCtx());
+    const result = await caller.auth.register({
+      name: "New Teacher",
+      email: "new@school.edu",
+      password: "securepass123",
+    });
+    expect(result.success).toBe(true);
+    expect(result.message).toContain("Awaiting admin approval");
+    expect(db.createUserWithPassword).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "New Teacher",
+        email: "new@school.edu",
+        eduRole: "teacher",
+        accountStatus: "pending",
+      })
+    );
+  });
+
+  it("throws CONFLICT when email is already registered", async () => {
+    vi.mocked(db.getUserByEmail).mockResolvedValue({
+      id: 99,
+      openId: "existing",
+      email: "taken@school.edu",
+      name: "Existing",
+      passwordHash: "hash",
+      accountStatus: "approved",
+    } as any);
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(
+      caller.auth.register({
+        name: "Duplicate",
+        email: "taken@school.edu",
+        password: "securepass123",
+      })
+    ).rejects.toThrow(TRPCError);
+  });
+
+  it("throws validation error when password is too short", async () => {
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(
+      caller.auth.register({ name: "Teacher", email: "t@school.edu", password: "short" })
+    ).rejects.toThrow();
+  });
+});
+
+describe("auth.login", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("throws UNAUTHORIZED when email does not exist", async () => {
+    vi.mocked(db.getUserByEmail).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(
+      caller.auth.login({ email: "nobody@school.edu", password: "pass" })
+    ).rejects.toThrow(TRPCError);
+  });
+
+  it("throws UNAUTHORIZED when password is wrong", async () => {
+    // bcrypt hash of "correctpass" — we provide "wrongpass"
+    vi.mocked(db.getUserByEmail).mockResolvedValue({
+      id: 1,
+      openId: "email_abc",
+      email: "teacher@school.edu",
+      name: "Teacher",
+      // bcrypt hash of "correctpass" (cost 12) — any non-matching hash works
+      passwordHash: "$2b$12$invalidhashfortesting000000000000000000000000000000000",
+      accountStatus: "approved",
+      role: "user",
+      eduRole: "teacher",
+    } as any);
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(
+      caller.auth.login({ email: "teacher@school.edu", password: "wrongpass" })
+    ).rejects.toThrow(TRPCError);
+  });
+
+  it("throws FORBIDDEN when account is rejected", async () => {
+    vi.mocked(db.getUserByEmail).mockResolvedValue({
+      id: 1,
+      openId: "email_abc",
+      email: "rejected@school.edu",
+      name: "Rejected Teacher",
+      passwordHash: "$2b$12$invalidhashfortesting000000000000000000000000000000000",
+      accountStatus: "rejected",
+      role: "user",
+      eduRole: "teacher",
+    } as any);
+    const caller = appRouter.createCaller(makePublicCtx());
+    await expect(
+      caller.auth.login({ email: "rejected@school.edu", password: "anypass" })
+    ).rejects.toThrow(TRPCError);
+  });
+});
+
+// ─── Admin Account Status ─────────────────────────────────────────────────────
+
+describe("admin.updateAccountStatus", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("allows admin to approve a pending teacher", async () => {
+    vi.mocked(db.updateUserAccountStatus).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeAdminCtx());
+    const result = await caller.admin.updateAccountStatus({
+      userId: 10,
+      accountStatus: "approved",
+    });
+    expect(result.success).toBe(true);
+    expect(db.updateUserAccountStatus).toHaveBeenCalledWith(10, "approved");
+  });
+
+  it("allows admin to reject a pending teacher", async () => {
+    vi.mocked(db.updateUserAccountStatus).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeAdminCtx());
+    const result = await caller.admin.updateAccountStatus({
+      userId: 11,
+      accountStatus: "rejected",
+    });
+    expect(result.success).toBe(true);
+    expect(db.updateUserAccountStatus).toHaveBeenCalledWith(11, "rejected");
+  });
+
+  it("throws FORBIDDEN when a non-admin tries to change account status", async () => {
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    await expect(
+      caller.admin.updateAccountStatus({ userId: 10, accountStatus: "approved" })
+    ).rejects.toThrow(TRPCError);
   });
 });

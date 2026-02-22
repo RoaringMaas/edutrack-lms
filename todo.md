@@ -84,3 +84,19 @@
 - [x] Add share link button/dialog in teacher's student roster (ClassDetail)
 - [x] Add copy-to-clipboard, regenerate, and revoke functionality
 - [x] Write vitest tests for share token procedures (7 new tests, 28 total)
+
+## Email/Password Authentication (Replace Manus OAuth)
+- [x] Add passwordHash and accountStatus (pending/approved/rejected) columns to users table
+- [x] Push schema migration (pnpm db:push)
+- [x] Add auth DB helpers: createUserWithPassword, getUserByEmail, updateUserAccountStatus, updateUserLastSignedIn
+- [x] tRPC auth.register: hash password with bcrypt, create user with pending status
+- [x] tRPC auth.login: verify bcrypt password, issue 30-day JWT session cookie
+- [x] tRPC admin.updateAccountStatus: approve/reject teacher accounts
+- [x] Build /login page (email/password form, show pending state after login)
+- [x] Build /register page (name, email, password, confirm password, success screen)
+- [x] Update client/src/const.ts: getLoginUrl() returns /login
+- [x] Update DashboardLayout: redirect unauthenticated to /login, show pending approval screen
+- [x] Add /login and /register routes to App.tsx
+- [x] Admin approval queue in Settings: pending teachers list with Approve/Reject buttons
+- [x] Active user management: re-approve rejected teachers, change roles
+- [x] Vitest tests: auth.register (3), auth.login (3), admin.updateAccountStatus (3) — 37 total tests passing

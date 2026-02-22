@@ -39,8 +39,13 @@ import {
   updateUserEduRole,
   getStudentByShareToken,
   setStudentShareToken,
+  getUserByEmail,
+  createUserWithPassword,
+  updateUserAccountStatus,
+  updateUserLastSignedIn,
 } from "./db";
 import { nanoid } from "nanoid";
+import bcrypt from "bcryptjs";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -56,6 +61,98 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
+
+    register: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(2, "Name must be at least 2 characters"),
+          email: z.email("Invalid email address"),
+          password: z.string().min(8, "Password must be at least 8 characters"),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // Check if email already taken
+        const existing = await getUserByEmail(input.email);
+        if (existing) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "An account with this email already exists.",
+          });
+        }
+        // Hash password
+        const passwordHash = await bcrypt.hash(input.password, 12);
+        // Generate a unique openId for this user (not Manus OAuth)
+        const openId = `email_${nanoid(24)}`;
+        const initials = input.name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2);
+        await createUserWithPassword({
+          name: input.name,
+          email: input.email,
+          passwordHash,
+          openId,
+          eduRole: "teacher",
+          accountStatus: "pending",
+          role: "user",
+        });
+        return { success: true, message: "Account created. Awaiting admin approval." } as const;
+      }),
+
+    login: publicProcedure
+      .input(
+        z.object({
+          email: z.email("Invalid email address"),
+          password: z.string().min(1, "Password is required"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const user = await getUserByEmail(input.email);
+        if (!user || !user.passwordHash) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid email or password.",
+          });
+        }
+        const valid = await bcrypt.compare(input.password, user.passwordHash);
+        if (!valid) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid email or password.",
+          });
+        }
+        if (user.accountStatus === "rejected") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Your account has been rejected. Please contact your administrator.",
+          });
+        }
+        // Update last signed in
+        await updateUserLastSignedIn(user.id);
+        // Issue session JWT (reuse existing SDK signing)
+        const { sdk } = await import("./_core/sdk");
+        const token = await sdk.signSession(
+          { openId: user.openId, appId: "edutrack", name: user.name ?? "" },
+          { expiresInMs: 1000 * 60 * 60 * 24 * 30 } // 30 days
+        );
+        const cookieOptions = getSessionCookieOptions(ctx.req);
+        ctx.res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 60 * 60 * 24 * 30 });
+        return {
+          success: true,
+          accountStatus: user.accountStatus,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            eduRole: user.eduRole,
+            role: user.role,
+            accountStatus: user.accountStatus,
+          },
+        } as const;
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -471,6 +568,21 @@ export const appRouter = router({
           throw new TRPCError({ code: "FORBIDDEN" });
         }
         await updateUserEduRole(input.userId, input.eduRole);
+        return { success: true };
+      }),
+
+    updateAccountStatus: protectedProcedure
+      .input(
+        z.object({
+          userId: z.number(),
+          accountStatus: z.enum(["pending", "approved", "rejected"]),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.eduRole !== "admin") {
+          throw new TRPCError({ code: "FORBIDDEN" });
+        }
+        await updateUserAccountStatus(input.userId, input.accountStatus);
         return { success: true };
       }),
   }),

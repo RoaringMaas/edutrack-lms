@@ -99,6 +99,55 @@ export async function updateUserEduRole(userId: number, eduRole: "teacher" | "ad
   await db.update(users).set({ eduRole }).where(eq(users.id, userId));
 }
 
+// ─── Email/Password Auth Helpers ─────────────────────────────────────────────
+
+export async function getUserByEmail(email: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  return result[0];
+}
+
+export async function createUserWithPassword(data: {
+  name: string;
+  email: string;
+  passwordHash: string;
+  openId: string;
+  eduRole?: "teacher" | "admin";
+  accountStatus?: "pending" | "approved" | "rejected";
+  role?: "user" | "admin";
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(users).values({
+    openId: data.openId,
+    name: data.name,
+    email: data.email,
+    passwordHash: data.passwordHash,
+    loginMethod: "email",
+    eduRole: data.eduRole ?? "teacher",
+    accountStatus: data.accountStatus ?? "pending",
+    role: data.role ?? "user",
+    lastSignedIn: new Date(),
+  });
+  return Number((result as any)[0]?.insertId ?? 0);
+}
+
+export async function updateUserAccountStatus(
+  userId: number,
+  accountStatus: "pending" | "approved" | "rejected"
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ accountStatus }).where(eq(users.id, userId));
+}
+
+export async function updateUserLastSignedIn(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, userId));
+}
+
 // ─── Classes ──────────────────────────────────────────────────────────────────
 
 export async function getClassesByTeacher(teacherId: number): Promise<Class[]> {

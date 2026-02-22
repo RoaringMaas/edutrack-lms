@@ -116,7 +116,7 @@ function ProfileSection({ user }: { user: any }) {
         <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-start gap-2">
           <CheckCircle2 className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
           <p className="text-xs text-blue-700">
-            Profile information is managed through Manus OAuth. To update your name or email, please update your Manus account.
+            Your profile is linked to your email/password account. Contact your administrator to update your name or email.
           </p>
         </div>
       </CardContent>
@@ -228,8 +228,80 @@ function AdminSection() {
     onError: (e) => toast.error(e.message),
   });
 
+  const updateStatusMutation = trpc.admin.updateAccountStatus.useMutation({
+    onSuccess: (_, vars) => {
+      utils.admin.listUsers.invalidate();
+      toast.success(
+        vars.accountStatus === "approved"
+          ? "Account approved — teacher can now sign in"
+          : "Account rejected"
+      );
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const pendingUsers = allUsers.filter((u: any) => u.accountStatus === "pending");
+  const activeUsers = allUsers.filter((u: any) => u.accountStatus !== "pending");
+
   return (
     <>
+      {/* Pending Approval Queue */}
+      {pendingUsers.length > 0 && (
+        <Card className="border shadow-sm border-amber-200">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              <CardTitle className="text-base">Pending Teacher Approvals</CardTitle>
+              <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 ml-auto">
+                {pendingUsers.length} pending
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              These teachers have registered and are waiting for your approval before they can access EduTrack.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pendingUsers.map((u: any) => (
+                <div key={u.id} className="flex items-center gap-3 p-3 border border-amber-200 bg-amber-50/40 rounded-lg">
+                  <div className="h-9 w-9 rounded-full bg-amber-100 flex items-center justify-center text-sm font-bold text-amber-700 shrink-0">
+                    {u.name?.charAt(0)?.toUpperCase() ?? "U"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{u.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Registered {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                      disabled={updateStatusMutation.isPending}
+                      onClick={() => updateStatusMutation.mutate({ userId: u.id, accountStatus: "rejected" })}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs bg-green-600 hover:bg-green-700"
+                      disabled={updateStatusMutation.isPending}
+                      onClick={() => updateStatusMutation.mutate({ userId: u.id, accountStatus: "approved" })}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      Approve
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active User Management */}
       <Card className="border shadow-sm border-purple-200">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
@@ -239,42 +311,61 @@ function AdminSection() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-2">
-            {allUsers.map((u: any) => (
-              <div key={u.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
-                  {u.name?.charAt(0)?.toUpperCase() ?? "U"}
+          {activeUsers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No active users yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {activeUsers.map((u: any) => (
+                <div key={u.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary shrink-0">
+                    {u.name?.charAt(0)?.toUpperCase() ?? "U"}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{u.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{u.email}</p>
+                    {u.accountStatus === "rejected" && (
+                      <Badge variant="destructive" className="text-xs mt-0.5">Rejected</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge
+                      variant={u.eduRole === "admin" ? "default" : "secondary"}
+                      className="text-xs"
+                    >
+                      {u.eduRole ?? "teacher"}
+                    </Badge>
+                    {u.accountStatus === "rejected" ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs"
+                        disabled={updateStatusMutation.isPending}
+                        onClick={() => updateStatusMutation.mutate({ userId: u.id, accountStatus: "approved" })}
+                      >
+                        Re-approve
+                      </Button>
+                    ) : (
+                      <Select
+                        value={u.eduRole ?? "teacher"}
+                        onValueChange={(v) => {
+                          setConfirmUserId(u.id);
+                          setPendingRole(v as "teacher" | "admin");
+                        }}
+                      >
+                        <SelectTrigger className="w-28 h-7 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="teacher">Teacher</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{u.name}</p>
-                  <p className="text-xs text-muted-foreground truncate">{u.email}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Badge
-                    variant={u.eduRole === "admin" ? "default" : "secondary"}
-                    className="text-xs"
-                  >
-                    {u.eduRole ?? "teacher"}
-                  </Badge>
-                  <Select
-                    value={u.eduRole ?? "teacher"}
-                    onValueChange={(v) => {
-                      setConfirmUserId(u.id);
-                      setPendingRole(v as "teacher" | "admin");
-                    }}
-                  >
-                    <SelectTrigger className="w-28 h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="teacher">Teacher</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

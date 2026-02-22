@@ -22,6 +22,10 @@ export const users = mysqlTable("users", {
   // EduTrack role: teacher or admin
   eduRole: mysqlEnum("eduRole", ["teacher", "admin"]).default("teacher").notNull(),
   avatarInitials: varchar("avatarInitials", { length: 4 }),
+  // Email/password auth
+  passwordHash: varchar("passwordHash", { length: 256 }),
+  // Account approval status: pending = awaiting admin approval, approved = can use app, rejected = denied
+  accountStatus: mysqlEnum("accountStatus", ["pending", "approved", "rejected"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

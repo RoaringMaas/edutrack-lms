@@ -73,31 +73,41 @@ export default function DashboardLayout({
   }
 
   if (!user) {
+    // Redirect to login page
+    window.location.href = getLoginUrl();
+    return <DashboardLayoutSkeleton />;
+  }
+
+  // Show pending approval screen if account is not yet approved
+  if ((user as any).accountStatus === "pending") {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-white">
-        <div className="flex flex-col items-center gap-8 p-10 max-w-md w-full bg-white rounded-2xl shadow-lg border border-border">
+        <div className="flex flex-col items-center gap-6 p-10 max-w-md w-full bg-white rounded-2xl shadow-lg border border-border">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center">
               <GraduationCap className="h-6 w-6 text-primary-foreground" />
             </div>
             <span className="text-2xl font-bold text-foreground">EduTrack</span>
           </div>
-          <div className="flex flex-col items-center gap-3 text-center">
-            <h1 className="text-xl font-semibold tracking-tight">
-              Welcome back, Teacher
-            </h1>
+          <div className="h-14 w-14 rounded-2xl bg-amber-100 flex items-center justify-center">
+            <svg className="h-7 w-7 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          </div>
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-xl font-semibold tracking-tight">Account Pending Approval</h1>
             <p className="text-sm text-muted-foreground max-w-xs">
-              Sign in to access your gradebook, manage classes, and track student progress.
+              Hi {user.name}, your account is awaiting approval from an administrator.
+              You will be able to access EduTrack once your account is approved.
             </p>
           </div>
           <Button
-            onClick={() => {
-              window.location.href = getLoginUrl();
-            }}
-            size="lg"
+            variant="outline"
             className="w-full"
+            onClick={async () => {
+              await fetch("/api/trpc/auth.logout", { method: "POST" }).catch(() => {});
+              window.location.href = "/login";
+            }}
           >
-            Sign in to EduTrack
+            Sign out
           </Button>
         </div>
       </div>

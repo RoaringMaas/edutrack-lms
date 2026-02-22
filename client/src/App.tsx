@@ -13,6 +13,8 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import ParentView from "./pages/ParentView";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
 
 function DashboardRouter() {
   return (
@@ -37,9 +39,11 @@ function DashboardRouter() {
 function Router() {
   return (
     <Switch>
-      {/* Public parent-facing view — no auth, no sidebar */}
+      {/* Public pages — no auth, no sidebar */}
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/parent/:token" component={ParentView} />
-      {/* All other routes go through the dashboard layout */}
+      {/* All other routes go through the dashboard layout (auth-gated inside DashboardLayout) */}
       <Route component={DashboardRouter} />
     </Switch>
   );
