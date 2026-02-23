@@ -33,6 +33,7 @@ import {
   Plus,
   Download,
   Trash2,
+  Edit,
 } from "lucide-react";
 
 type SubmissionStatus = "submitted" | "late" | "missing" | "pending";
@@ -87,6 +88,12 @@ export default function HomeworkTracker({
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [newAssignmentPoints, setNewAssignmentPoints] = useState("");
   const [newAssignmentDueDate, setNewAssignmentDueDate] = useState("");
+  
+  // Edit state
+  const [editingAssignment, setEditingAssignment] = useState<any>(null);
+  const [editName, setEditName] = useState("");
+  const [editPoints, setEditPoints] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
 
   const utils = trpc.useUtils();
   const { data: students = [] } = trpc.students.list.useQuery({ classId });
@@ -142,6 +149,18 @@ export default function HomeworkTracker({
     onError: (e) => toast.error(e.message),
   });
 
+  const updateAssignmentMutation = trpc.assignments.update.useMutation({
+    onSuccess: () => {
+      utils.assignments.list.invalidate({ classId });
+      setEditingAssignment(null);
+      setEditName("");
+      setEditPoints("");
+      setEditDueDate("");
+      toast.success("Assignment updated");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const deleteAssignmentMutation = trpc.assignments.delete.useMutation({
     onSuccess: () => {
       utils.assignments.list.invalidate({ classId });
@@ -174,6 +193,20 @@ export default function HomeworkTracker({
     const current = getStatus(studentId, assignmentId);
     const next = STATUS_CONFIG[current].next;
     upsertMutation.mutate({ studentId, assignmentId, status: next });
+  }
+
+  function openEditDialog(assignment: any) {
+    setEditingAssignment(assignment);
+    setEditName(assignment.name);
+    setEditPoints(String(assignment.points ?? 0));
+    setEditDueDate(assignment.dueDate ? assignment.dueDate.split('T')[0] : "");
+  }
+
+  function closeEditDialog() {
+    setEditingAssignment(null);
+    setEditName("");
+    setEditPoints("");
+    setEditDueDate("");
   }
 
   // Summary stats for current week
@@ -324,12 +357,22 @@ export default function HomeworkTracker({
                           </span>
                         )}
                         {!isAdmin && (
-                          <button
-                            onClick={() => deleteAssignmentMutation.mutate({ assignmentId: a.id })}
-                            className="text-muted-foreground/40 hover:text-destructive transition-colors"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openEditDialog(a)}
+                              className="text-muted-foreground/40 hover:text-blue-600 transition-colors"
+                              title="Edit assignment"
+                            >
+                              <Edit className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => deleteAssignmentMutation.mutate({ assignmentId: a.id })}
+                              className="text-muted-foreground/40 hover:text-destructive transition-colors"
+                              title="Delete assignment"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
                         )}
                       </div>
                     </th>
@@ -470,6 +513,60 @@ export default function HomeworkTracker({
               disabled={!newAssignmentName || createAssignmentMutation.isPending}
             >
               Add Assignment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Assignment Dialog */}
+      <Dialog open={!!editingAssignment} onOpenChange={(open) => !open && closeEditDialog()}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Edit Assignment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-1.5">
+              <Label>Assignment Name *</Label>
+              <Input
+                placeholder="e.g. Chapter 5 Worksheet"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Points <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                value={editPoints}
+                onChange={(e) => setEditPoints(e.target.value)}
+                className="w-24"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Due Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input
+                type="date"
+                value={editDueDate}
+                onChange={(e) => setEditDueDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeEditDialog}>Cancel</Button>
+            <Button
+              onClick={() =>
+                updateAssignmentMutation.mutate({
+                  assignmentId: editingAssignment.id,
+                  name: editName,
+                  points: editPoints === "" ? 0 : parseInt(editPoints) || 0,
+                  dueDate: editDueDate || undefined,
+                })
+              }
+              disabled={!editName || updateAssignmentMutation.isPending}
+            >
+              Save Changes
             </Button>
           </DialogFooter>
         </DialogContent>

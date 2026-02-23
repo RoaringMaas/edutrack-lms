@@ -27,6 +27,7 @@ vi.mock("./db", () => ({
   deleteStudent: vi.fn(),
   getAssignmentsByClass: vi.fn(),
   createAssignment: vi.fn(),
+  updateAssignment: vi.fn(),
   deleteAssignment: vi.fn(),
   getSubmissionsByClass: vi.fn(),
   upsertSubmission: vi.fn(),
@@ -273,6 +274,42 @@ describe("assignments.create", () => {
       weekLabel: "Week 1",
     });
     expect(result.id).toBe(7);
+  });
+});
+
+describe("assignments.update", () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it("updates assignment name, points, and due date", async () => {
+    vi.mocked(db.updateAssignment).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.assignments.update({
+      assignmentId: 7,
+      name: "Updated HW Week 1",
+      points: 50,
+      dueDate: "2026-03-15",
+    });
+    expect(result.success).toBe(true);
+    expect(db.updateAssignment).toHaveBeenCalledWith(7, {
+      name: "Updated HW Week 1",
+      points: 50,
+      dueDate: expect.any(Date),
+    });
+  });
+
+  it("updates only the name if other fields are omitted", async () => {
+    vi.mocked(db.updateAssignment).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.assignments.update({
+      assignmentId: 7,
+      name: "Renamed Assignment",
+    });
+    expect(result.success).toBe(true);
+    expect(db.updateAssignment).toHaveBeenCalledWith(7, {
+      name: "Renamed Assignment",
+      points: undefined,
+      dueDate: undefined,
+    });
   });
 });
 

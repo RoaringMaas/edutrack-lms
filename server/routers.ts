@@ -21,6 +21,7 @@ import {
   deleteStudent,
   getAssignmentsByClass,
   createAssignment,
+  updateAssignment,
   deleteAssignment,
   getSubmissionsByClass,
   upsertSubmission,
@@ -399,6 +400,23 @@ export const appRouter = router({
         return { id };
       }),
 
+    update: protectedProcedure
+      .input(
+        z.object({
+          assignmentId: z.number(),
+          name: z.string().min(1).optional(),
+          points: z.number().optional(),
+          dueDate: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await updateAssignment(input.assignmentId, {
+          name: input.name,
+          points: input.points,
+          dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+        });
+        return { success: true };
+      }),
     delete: protectedProcedure
       .input(z.object({ assignmentId: z.number() }))
       .mutation(async ({ input }) => {

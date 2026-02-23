@@ -129,3 +129,10 @@
 - [x] Added date picker for due date in the Add Assignment form
 - [x] Display due date below assignment title in the homework grid column headers
 - [x] Points label hidden when 0 (no pts shown for ungraded assignments)
+
+## Edit Homework Assignment Feature
+- [x] Add assignments.update tRPC procedure (name, points, dueDate)
+- [x] Add edit button/icon next to delete button in assignment column header
+- [x] Add edit dialog with name, points, due date fields pre-populated
+- [x] Update assignment on submit
+- [x] Vitest tests for assignments.update (2 tests) — 45 total tests passing

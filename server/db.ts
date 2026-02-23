@@ -250,6 +250,19 @@ export async function createAssignment(data: InsertAssignment): Promise<number> 
   return Number((result as any)[0]?.insertId ?? 0);
 }
 
+export async function updateAssignment(
+  assignmentId: number,
+  data: { name?: string; points?: number; dueDate?: Date | null }
+) {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.points !== undefined) updateData.points = data.points;
+  if (data.dueDate !== undefined) updateData.dueDate = data.dueDate;
+  await db.update(assignments).set(updateData).where(eq(assignments.id, assignmentId));
+}
+
 export async function deleteAssignment(assignmentId: number) {
   const db = await getDb();
   if (!db) return;
