@@ -1,0 +1,110 @@
+{
+  "query": "SELECT studentId, assignmentId, COUNT(*) as cnt FROM submissions GROUP BY studentId, assignmentId HAVING cnt > 1 LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT studentId, assignmentId, COUNT(*) as cnt FROM submissions GROUP BY studentId, assignmentId HAVING cnt > 1 LIMIT 20;",
+  "rows": [
+    {
+      "studentId": "7",
+      "assignmentId": "4",
+      "cnt": "2"
+    },
+    {
+      "studentId": "9",
+      "assignmentId": "5",
+      "cnt": "2"
+    },
+    {
+      "studentId": "4",
+      "assignmentId": "8",
+      "cnt": "2"
+    },
+    {
+      "studentId": "9",
+      "assignmentId": "2",
+      "cnt": "2"
+    },
+    {
+      "studentId": "2",
+      "assignmentId": "7",
+      "cnt": "2"
+    },
+    {
+      "studentId": "6",
+      "assignmentId": "2",
+      "cnt": "3"
+    },
+    {
+      "studentId": "10",
+      "assignmentId": "7",
+      "cnt": "3"
+    },
+    {
+      "studentId": "9",
+      "assignmentId": "6",
+      "cnt": "2"
+    },
+    {
+      "studentId": "9",
+      "assignmentId": "1",
+      "cnt": "2"
+    },
+    {
+      "studentId": "9",
+      "assignmentId": "7",
+      "cnt": "2"
+    },
+    {
+      "studentId": "4",
+      "assignmentId": "6",
+      "cnt": "2"
+    },
+    {
+      "studentId": "8",
+      "assignmentId": "1",
+      "cnt": "3"
+    },
+    {
+      "studentId": "10",
+      "assignmentId": "1",
+      "cnt": "3"
+    },
+    {
+      "studentId": "5",
+      "assignmentId": "2",
+      "cnt": "3"
+    },
+    {
+      "studentId": "4",
+      "assignmentId": "2",
+      "cnt": "2"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "cnt": "13"
+    },
+    {
+      "studentId": "3",
+      "assignmentId": "5",
+      "cnt": "2"
+    },
+    {
+      "studentId": "7",
+      "assignmentId": "1",
+      "cnt": "2"
+    },
+    {
+      "studentId": "4",
+      "assignmentId": "4",
+      "cnt": "3"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "7",
+      "cnt": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "studentId\tassignmentId\tcnt\n7\t4\t2\n9\t5\t2\n4\t8\t2\n9\t2\t2\n2\t7\t2\n6\t2\t3\n10\t7\t3\n9\t6\t2\n9\t1\t2\n9\t7\t2\n4\t6\t2\n8\t1\t3\n10\t1\t3\n5\t2\t3\n4\t2\t2\n1\t1\t13\n3\t5\t2\n7\t1\t2\n4\t4\t3\n1\t7\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1560
+}

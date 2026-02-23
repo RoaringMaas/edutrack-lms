@@ -1,0 +1,50 @@
+{
+  "query": "SELECT a.id, a.name, a.dateTaken, a.maxScore, COUNT(g.id) as grade_count, AVG(g.score) as avg_score FROM assessments a LEFT JOIN grades g ON g.assessmentId = a.id GROUP BY a.id, a.name, a.dateTaken, a.maxScore ORDER BY a.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT a.id, a.name, a.dateTaken, a.maxScore, COUNT(g.id) as grade_count, AVG(g.score) as avg_score FROM assessments a LEFT JOIN grades g ON g.assessmentId = a.id GROUP BY a.id, a.name, a.dateTaken, a.maxScore ORDER BY a.id;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Algebra",
+      "dateTaken": "2025-01-20",
+      "maxScore": "20",
+      "grade_count": "21",
+      "avg_score": "15.089999961853028"
+    },
+    {
+      "id": "2",
+      "name": "Geometry",
+      "dateTaken": "2025-02-03",
+      "maxScore": "20",
+      "grade_count": "10",
+      "avg_score": "14.15"
+    },
+    {
+      "id": "3",
+      "name": "Mid-Term Exam",
+      "dateTaken": "2025-02-17",
+      "maxScore": "100",
+      "grade_count": "10",
+      "avg_score": "75.17999877929688"
+    },
+    {
+      "id": "4",
+      "name": "Group Project",
+      "dateTaken": "2025-03-03",
+      "maxScore": "50",
+      "grade_count": "10",
+      "avg_score": "37.08000011444092"
+    },
+    {
+      "id": "5",
+      "name": "Quadratics",
+      "dateTaken": "2025-03-10",
+      "maxScore": "20",
+      "grade_count": "10",
+      "avg_score": "15.120000171661378"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdateTaken\tmaxScore\tgrade_count\tavg_score\n1\tAlgebra\t2025-01-20\t20\t21\t15.089999961853028\n2\tGeometry\t2025-02-03\t20\t10\t14.15\n3\tMid-Term Exam\t2025-02-17\t100\t10\t75.17999877929688\n4\tGroup Project\t2025-03-03\t50\t10\t37.08000011444092\n5\tQuadratics\t2025-03-10\t20\t10\t15.120000171661378\n",
+  "stderr": "",
+  "execution_time_ms": 1529
+}

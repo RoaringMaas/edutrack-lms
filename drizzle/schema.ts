@@ -8,6 +8,7 @@ import {
   float,
   boolean,
   date,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -85,16 +86,20 @@ export type InsertAssignment = typeof assignments.$inferInsert;
 
 // ─── Submissions ──────────────────────────────────────────────────────────────
 
-export const submissions = mysqlTable("submissions", {
-  id: int("id").autoincrement().primaryKey(),
-  studentId: int("studentId").notNull(),
-  assignmentId: int("assignmentId").notNull(),
-  status: mysqlEnum("status", ["submitted", "late", "missing", "pending"])
-    .default("pending")
-    .notNull(),
-  submittedAt: timestamp("submittedAt"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const submissions = mysqlTable(
+  "submissions",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    studentId: int("studentId").notNull(),
+    assignmentId: int("assignmentId").notNull(),
+    status: mysqlEnum("status", ["submitted", "late", "missing", "pending"])
+      .default("pending")
+      .notNull(),
+    submittedAt: timestamp("submittedAt"),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("uq_submission").on(t.studentId, t.assignmentId)]
+);
 
 export type Submission = typeof submissions.$inferSelect;
 export type InsertSubmission = typeof submissions.$inferInsert;
@@ -123,13 +128,17 @@ export type InsertAssessment = typeof assessments.$inferInsert;
 
 // ─── Grades ───────────────────────────────────────────────────────────────────
 
-export const grades = mysqlTable("grades", {
-  id: int("id").autoincrement().primaryKey(),
-  studentId: int("studentId").notNull(),
-  assessmentId: int("assessmentId").notNull(),
-  score: float("score"),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+export const grades = mysqlTable(
+  "grades",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    studentId: int("studentId").notNull(),
+    assessmentId: int("assessmentId").notNull(),
+    score: float("score"),
+    updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("uq_grade").on(t.studentId, t.assessmentId)]
+);
 
 export type Grade = typeof grades.$inferSelect;
 export type InsertGrade = typeof grades.$inferInsert;

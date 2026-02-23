@@ -1,0 +1,60 @@
+{
+  "query": "SELECT studentId, assignmentId, COUNT(*) as cnt FROM submissions GROUP BY studentId, assignmentId HAVING cnt > 1 ORDER BY cnt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT studentId, assignmentId, COUNT(*) as cnt FROM submissions GROUP BY studentId, assignmentId HAVING cnt > 1 ORDER BY cnt DESC LIMIT 10;",
+  "rows": [
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "cnt": "13"
+    },
+    {
+      "studentId": "10",
+      "assignmentId": "7",
+      "cnt": "3"
+    },
+    {
+      "studentId": "8",
+      "assignmentId": "1",
+      "cnt": "3"
+    },
+    {
+      "studentId": "6",
+      "assignmentId": "2",
+      "cnt": "3"
+    },
+    {
+      "studentId": "4",
+      "assignmentId": "4",
+      "cnt": "3"
+    },
+    {
+      "studentId": "10",
+      "assignmentId": "1",
+      "cnt": "3"
+    },
+    {
+      "studentId": "5",
+      "assignmentId": "2",
+      "cnt": "3"
+    },
+    {
+      "studentId": "5",
+      "assignmentId": "4",
+      "cnt": "2"
+    },
+    {
+      "studentId": "7",
+      "assignmentId": "1",
+      "cnt": "2"
+    },
+    {
+      "studentId": "4",
+      "assignmentId": "2",
+      "cnt": "2"
+    }
+  ],
+  "messages": [],
+  "stdout": "studentId\tassignmentId\tcnt\n1\t1\t13\n10\t7\t3\n8\t1\t3\n6\t2\t3\n4\t4\t3\n10\t1\t3\n5\t2\t3\n5\t4\t2\n7\t1\t2\n4\t2\t2\n",
+  "stderr": "",
+  "execution_time_ms": 1558
+}

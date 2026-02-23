@@ -1,0 +1,150 @@
+{
+  "query": "SELECT s.studentId, s.assignmentId, s.status, s.id, a.weekLabel FROM submissions s JOIN assignments a ON s.assignmentId = a.id WHERE s.studentId = 1 ORDER BY s.assignmentId, s.id LIMIT 30;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT s.studentId, s.assignmentId, s.status, s.id, a.weekLabel FROM submissions s JOIN assignments a ON s.assignmentId = a.id WHERE s.studentId = 1 ORDER BY s.assignmentId, s.id LIMIT 30;",
+  "rows": [
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "submitted",
+      "id": "1",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "late",
+      "id": "2",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "missing",
+      "id": "3",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "pending",
+      "id": "4",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "submitted",
+      "id": "5",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "late",
+      "id": "6",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "missing",
+      "id": "7",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "pending",
+      "id": "8",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "submitted",
+      "id": "9",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "late",
+      "id": "10",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "missing",
+      "id": "11",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "pending",
+      "id": "12",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "1",
+      "status": "submitted",
+      "id": "13",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "2",
+      "status": "submitted",
+      "id": "29",
+      "weekLabel": "Week 1"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "4",
+      "status": "submitted",
+      "id": "47",
+      "weekLabel": "Week 2"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "5",
+      "status": "submitted",
+      "id": "60",
+      "weekLabel": "Week 3"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "6",
+      "status": "submitted",
+      "id": "72",
+      "weekLabel": "Week 4"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "7",
+      "status": "submitted",
+      "id": "84",
+      "weekLabel": "Week 5"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "7",
+      "status": "late",
+      "id": "85",
+      "weekLabel": "Week 5"
+    },
+    {
+      "studentId": "1",
+      "assignmentId": "8",
+      "status": "submitted",
+      "id": "99",
+      "weekLabel": "Week 6"
+    }
+  ],
+  "messages": [],
+  "stdout": "studentId\tassignmentId\tstatus\tid\tweekLabel\n1\t1\tsubmitted\t1\tWeek 1\n1\t1\tlate\t2\tWeek 1\n1\t1\tmissing\t3\tWeek 1\n1\t1\tpending\t4\tWeek 1\n1\t1\tsubmitted\t5\tWeek 1\n1\t1\tlate\t6\tWeek 1\n1\t1\tmissing\t7\tWeek 1\n1\t1\tpending\t8\tWeek 1\n1\t1\tsubmitted\t9\tWeek 1\n1\t1\tlate\t10\tWeek 1\n1\t1\tmissing\t11\tWeek 1\n1\t1\tpending\t12\tWeek 1\n1\t1\tsubmitted\t13\tWeek 1\n1\t2\tsubmitted\t29\tWeek 1\n1\t4\tsubmitted\t47\tWeek 2\n1\t5\tsubmitted\t60\tWeek 3\n1\t6\tsubmitted\t72\tWeek 4\n1\t7\tsubmitted\t84\tWeek 5\n1\t7\tlate\t85\tWeek 5\n1\t8\tsubmitted\t99\tWeek 6\n",
+  "stderr": "",
+  "execution_time_ms": 1543
+}

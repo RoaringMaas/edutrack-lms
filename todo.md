@@ -136,3 +136,8 @@
 - [x] Add edit dialog with name, points, due date fields pre-populated
 - [x] Update assignment on submit
 - [x] Vitest tests for assignments.update (2 tests) — 45 total tests passing
+
+## Bug Fixes (Round 3)
+- [x] Fix submission rate >100%: added unique index uq_submission on (studentId, assignmentId); deleted 39 duplicate rows
+- [x] Fix Algebra score missing from chart: added unique index uq_grade on (studentId, assessmentId); deleted 11 duplicate null-score rows
+- [x] Clean up existing duplicate submission and grade rows in the database

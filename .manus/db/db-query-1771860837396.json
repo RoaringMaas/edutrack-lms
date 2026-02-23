@@ -1,0 +1,25 @@
+{
+  "query": "SELECT COUNT(*) as total_submissions FROM submissions; SELECT COUNT(*) as total_assignments FROM assignments; SELECT COUNT(DISTINCT studentId) as students FROM submissions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT COUNT(*) as total_submissions FROM submissions; SELECT COUNT(*) as total_assignments FROM assignments; SELECT COUNT(DISTINCT studentId) as students FROM submissions;",
+  "rows": [
+    {
+      "total_submissions": "109"
+    },
+    {
+      "total_submissions": "total_assignments"
+    },
+    {
+      "total_submissions": "7"
+    },
+    {
+      "total_submissions": "students"
+    },
+    {
+      "total_submissions": "10"
+    }
+  ],
+  "messages": [],
+  "stdout": "total_submissions\n109\ntotal_assignments\n7\nstudents\n10\n",
+  "stderr": "",
+  "execution_time_ms": 1940
+}

@@ -1,0 +1,23 @@
+{
+  "query": "SHOW CREATE TABLE submissions;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SHOW CREATE TABLE submissions;",
+  "rows": [
+    {
+      "Table": "submissions",
+      "Create Table": "CREATE TABLE `submissions` ("
+    }
+  ],
+  "messages": [
+    "  `id` int(11) NOT NULL AUTO_INCREMENT,",
+    "  `studentId` int(11) NOT NULL,",
+    "  `assignmentId` int(11) NOT NULL,",
+    "  `status` enum('submitted','late','missing','pending') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',",
+    "  `submittedAt` timestamp NULL DEFAULT NULL,",
+    "  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,",
+    "  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */",
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=30001"
+  ],
+  "stdout": "Table\tCreate Table\nsubmissions\tCREATE TABLE `submissions` (\n  `id` int(11) NOT NULL AUTO_INCREMENT,\n  `studentId` int(11) NOT NULL,\n  `assignmentId` int(11) NOT NULL,\n  `status` enum('submitted','late','missing','pending') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',\n  `submittedAt` timestamp NULL DEFAULT NULL,\n  `updatedAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci AUTO_INCREMENT=30001\n",
+  "stderr": "",
+  "execution_time_ms": 1500
+}

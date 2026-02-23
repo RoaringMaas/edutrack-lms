@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, name, dateTaken, classId, maxScore FROM assessments ORDER BY classId, dateTaken, id LIMIT 20;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT id, name, dateTaken, classId, maxScore FROM assessments ORDER BY classId, dateTaken, id LIMIT 20;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Algebra",
+      "dateTaken": "2025-01-20",
+      "classId": "1",
+      "maxScore": "20"
+    },
+    {
+      "id": "2",
+      "name": "Geometry",
+      "dateTaken": "2025-02-03",
+      "classId": "1",
+      "maxScore": "20"
+    },
+    {
+      "id": "3",
+      "name": "Mid-Term Exam",
+      "dateTaken": "2025-02-17",
+      "classId": "1",
+      "maxScore": "100"
+    },
+    {
+      "id": "4",
+      "name": "Group Project",
+      "dateTaken": "2025-03-03",
+      "classId": "1",
+      "maxScore": "50"
+    },
+    {
+      "id": "5",
+      "name": "Quadratics",
+      "dateTaken": "2025-03-10",
+      "classId": "1",
+      "maxScore": "20"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\tdateTaken\tclassId\tmaxScore\n1\tAlgebra\t2025-01-20\t1\t20\n2\tGeometry\t2025-02-03\t1\t20\n3\tMid-Term Exam\t2025-02-17\t1\t100\n4\tGroup Project\t2025-03-03\t1\t50\n5\tQuadratics\t2025-03-10\t1\t20\n",
+  "stderr": "",
+  "execution_time_ms": 1517
+}
