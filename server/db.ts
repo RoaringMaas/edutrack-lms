@@ -384,11 +384,11 @@ export async function setStudentShareToken(studentId: number, token: string | nu
 
 // ─── Teacher Notes ────────────────────────────────────────────────────────────
 
-export async function getTeacherNotes(classId: number): Promise<TeacherNote | undefined> {
+export async function getTeacherNotes(classId: number): Promise<TeacherNote | null> {
   const db = await getDb();
-  if (!db) return undefined;
+  if (!db) return null;
   const result = await db.select().from(teacherNotes).where(eq(teacherNotes.classId, classId)).limit(1);
-  return result[0];
+  return result[0] ?? null;
 }
 
 export async function upsertTeacherNotes(classId: number, notes: string): Promise<void> {
