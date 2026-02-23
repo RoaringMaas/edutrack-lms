@@ -119,3 +119,13 @@
 
 ## Bug Fixes (Round 2)
 - [x] Fix empty Select.Item value crash in CSV student import wizard (column mapping step) — replaced empty string value with __none__ sentinel
+- [x] Fix "Invalid email or password" error on /login page — wrong bcrypt hash was stored for admin account during initial setup; corrected hash for EduTrack2026
+
+## Homework Assignment Form Improvements
+- [x] Make points field optional — empty value defaults to 0 (no points required)
+- [x] dueDate column already existed in schema (no migration needed)
+- [x] assignments.create router already accepted dueDate (no change needed)
+- [x] Updated HomeworkTracker UI: points field is now optional with placeholder "0"
+- [x] Added date picker for due date in the Add Assignment form
+- [x] Display due date below assignment title in the homework grid column headers
+- [x] Points label hidden when 0 (no pts shown for ungraded assignments)

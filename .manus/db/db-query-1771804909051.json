@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, email, accountStatus, role, eduRole, LENGTH(passwordHash) as hashLen, passwordHash FROM users WHERE email = 'maas0113@gmail.com' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT id, email, accountStatus, role, eduRole, LENGTH(passwordHash) as hashLen, passwordHash FROM users WHERE email = 'maas0113@gmail.com' LIMIT 1",
+  "rows": [
+    {
+      "id": "1",
+      "email": "maas0113@gmail.com",
+      "accountStatus": "approved",
+      "role": "admin",
+      "eduRole": "admin",
+      "hashLen": "60",
+      "passwordHash": "$2b$12$H/AHfHNAdIaA0ALKH3.C9.XPk/wHdyqTz1/.S7ZR0CqvuWyAX95fK"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\temail\taccountStatus\trole\teduRole\thashLen\tpasswordHash\n1\tmaas0113@gmail.com\tapproved\tadmin\tadmin\t60\t$2b$12$H/AHfHNAdIaA0ALKH3.C9.XPk/wHdyqTz1/.S7ZR0CqvuWyAX95fK\n",
+  "stderr": "",
+  "execution_time_ms": 1590
+}

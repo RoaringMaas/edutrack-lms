@@ -85,7 +85,8 @@ export default function HomeworkTracker({
   const [selectedWeek, setSelectedWeek] = useState("Week 1");
   const [showAddAssignment, setShowAddAssignment] = useState(false);
   const [newAssignmentName, setNewAssignmentName] = useState("");
-  const [newAssignmentPoints, setNewAssignmentPoints] = useState("10");
+  const [newAssignmentPoints, setNewAssignmentPoints] = useState("");
+  const [newAssignmentDueDate, setNewAssignmentDueDate] = useState("");
 
   const utils = trpc.useUtils();
   const { data: students = [] } = trpc.students.list.useQuery({ classId });
@@ -134,7 +135,8 @@ export default function HomeworkTracker({
       utils.assignments.list.invalidate({ classId });
       setShowAddAssignment(false);
       setNewAssignmentName("");
-      setNewAssignmentPoints("10");
+      setNewAssignmentPoints("");
+      setNewAssignmentDueDate("");
       toast.success("Assignment added");
     },
     onError: (e) => toast.error(e.message),
@@ -313,7 +315,14 @@ export default function HomeworkTracker({
                     <th key={a.id} className="px-3 py-3 font-medium text-muted-foreground text-center min-w-[120px]">
                       <div className="flex flex-col items-center gap-1">
                         <span className="text-xs">{a.name}</span>
-                        <span className="text-xs text-muted-foreground/60">{a.points}pts</span>
+                        {(a.points ?? 0) > 0 && (
+                          <span className="text-xs text-muted-foreground/60">{a.points}pts</span>
+                        )}
+                        {a.dueDate && (
+                          <span className="text-xs text-muted-foreground/50">
+                            Due {new Date(a.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                          </span>
+                        )}
                         {!isAdmin && (
                           <button
                             onClick={() => deleteAssignmentMutation.mutate({ assignmentId: a.id })}
@@ -423,13 +432,22 @@ export default function HomeworkTracker({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Points</Label>
+              <Label>Points <span className="text-muted-foreground text-xs">(optional)</span></Label>
               <Input
                 type="number"
-                min={1}
+                min={0}
+                placeholder="0"
                 value={newAssignmentPoints}
                 onChange={(e) => setNewAssignmentPoints(e.target.value)}
                 className="w-24"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Due Date <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <Input
+                type="date"
+                value={newAssignmentDueDate}
+                onChange={(e) => setNewAssignmentDueDate(e.target.value)}
               />
             </div>
             <div className="p-2 bg-muted/50 rounded-lg text-xs text-muted-foreground">
@@ -445,7 +463,8 @@ export default function HomeworkTracker({
                   name: newAssignmentName,
                   weekLabel: selectedWeek,
                   weekNumber: parseInt(selectedWeek.replace("Week ", "")),
-                  points: parseInt(newAssignmentPoints) || 10,
+                  points: newAssignmentPoints === "" ? 0 : parseInt(newAssignmentPoints) || 0,
+                  dueDate: newAssignmentDueDate || undefined,
                 })
               }
               disabled={!newAssignmentName || createAssignmentMutation.isPending}

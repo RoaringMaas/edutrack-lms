@@ -1,0 +1,22 @@
+{
+  "query": "SELECT id, name, email, openId, loginMethod, role, eduRole, accountStatus, passwordHash IS NOT NULL as hasPassword, LEFT(passwordHash, 10) as hashPrefix FROM users WHERE email = 'maas0113@gmail.com' LIMIT 1",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway03.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2TWBtpcjgwG5hzA.51374b31de3a --database hFUnU9s979wktvWmUbU36Q --execute SELECT id, name, email, openId, loginMethod, role, eduRole, accountStatus, passwordHash IS NOT NULL as hasPassword, LEFT(passwordHash, 10) as hashPrefix FROM users WHERE email = 'maas0113@gmail.com' LIMIT 1",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Maas Chen",
+      "email": "maas0113@gmail.com",
+      "openId": "WuV6DhDxXkTxvgmsgHDqjs",
+      "loginMethod": "email",
+      "role": "admin",
+      "eduRole": "admin",
+      "accountStatus": "approved",
+      "hasPassword": "1",
+      "hashPrefix": "$2b$12$H/A"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\topenId\tloginMethod\trole\teduRole\taccountStatus\thasPassword\thashPrefix\n1\tMaas Chen\tmaas0113@gmail.com\tWuV6DhDxXkTxvgmsgHDqjs\temail\tadmin\tadmin\tapproved\t1\t$2b$12$H/A\n",
+  "stderr": "",
+  "execution_time_ms": 1513
+}
