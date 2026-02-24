@@ -147,3 +147,7 @@
 - [x] Add Student ID input field to the Edit Student dialog in ClassDetail (pre-populated with current value)
 - [x] Show the student ID code in the student list table (already shown as badge)
 - [x] Vitest tests for students.update (3 tests) — 48 total tests passing
+
+## Bug Fixes (Round 4)
+- [x] Fix Bug #1: Pending users can log in — changed accountStatus check from === "rejected" to !== "approved"; also removed pending approval flow from frontend
+- [x] Fix Bug #2: Debug console.log statements leak PII — removed two console.log lines from auth.login procedure

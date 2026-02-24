@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { GraduationCap, Eye, EyeOff, Loader2, AlertCircle, Clock } from "lucide-react";
+import { GraduationCap, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -22,7 +22,6 @@ export default function Login() {
   const [, navigate] = useLocation();
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [pendingApproval, setPendingApproval] = useState(false);
   const utils = trpc.useUtils();
 
   const {
@@ -35,10 +34,6 @@ export default function Login() {
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async (data) => {
-      if (data.accountStatus === "pending") {
-        setPendingApproval(true);
-        return;
-      }
       // Refresh auth state then navigate to dashboard
       await utils.auth.me.invalidate();
       navigate("/");
@@ -50,37 +45,8 @@ export default function Login() {
 
   const onSubmit = (data: LoginForm) => {
     setServerError(null);
-    setPendingApproval(false);
     loginMutation.mutate(data);
   };
-
-  if (pendingApproval) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto h-14 w-14 rounded-2xl bg-amber-100 flex items-center justify-center mb-3">
-              <Clock className="h-7 w-7 text-amber-600" />
-            </div>
-            <CardTitle className="text-xl">Awaiting Approval</CardTitle>
-            <CardDescription>
-              Your account has been created and is pending admin approval. You will be able to log in
-              once an administrator approves your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => setPendingApproval(false)}
-            >
-              Back to Login
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">

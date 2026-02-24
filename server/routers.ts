@@ -119,19 +119,20 @@ export const appRouter = router({
             message: "Invalid email or password.",
           });
         }
-        console.log('[Login Debug] email:', input.email, '| hashLen:', user.passwordHash?.length, '| hashPrefix:', user.passwordHash?.substring(0, 10));
         const valid = await bcrypt.compare(input.password, user.passwordHash);
-        console.log('[Login Debug] bcrypt.compare result:', valid);
         if (!valid) {
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Invalid email or password.",
           });
         }
-        if (user.accountStatus === "rejected") {
+        if (user.accountStatus !== "approved") {
+          const msg = user.accountStatus === "rejected"
+            ? "Your account has been rejected. Please contact your administrator."
+            : "Your account is pending admin approval.";
           throw new TRPCError({
             code: "FORBIDDEN",
-            message: "Your account has been rejected. Please contact your administrator.",
+            message: msg,
           });
         }
         // Update last signed in
