@@ -163,6 +163,7 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
   const [editStudent, setEditStudent] = useState<any | null>(null);
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
+  const [newStudentIdCode, setNewStudentIdCode] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [shareStudent, setShareStudent] = useState<any | null>(null);
 
@@ -341,6 +342,7 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
                             setEditStudent(student);
                             setNewName(student.name);
                             setNewEmail(student.email ?? "");
+                            setNewStudentIdCode(student.studentId ?? "");
                           }}
                         >
                           <Edit2 className="h-3.5 w-3.5" />
@@ -412,6 +414,16 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1.5">
+              <Label>Student ID</Label>
+              <Input
+                value={newStudentIdCode}
+                onChange={(e) => setNewStudentIdCode(e.target.value)}
+                placeholder="e.g. 10A0001"
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">Must be unique within this class.</p>
+            </div>
+            <div className="space-y-1.5">
               <Label>Full Name *</Label>
               <Input value={newName} onChange={(e) => setNewName(e.target.value)} />
             </div>
@@ -423,7 +435,7 @@ function StudentRoster({ classId, cls, isAdmin }: { classId: number; cls: any; i
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditStudent(null)}>Cancel</Button>
             <Button
-              onClick={() => updateMutation.mutate({ studentId: editStudent.id, name: newName, email: newEmail || undefined })}
+              onClick={() => updateMutation.mutate({ studentId: editStudent.id, name: newName, email: newEmail || undefined, studentIdCode: newStudentIdCode || undefined })}
               disabled={!newName || updateMutation.isPending}
             >
               Save Changes

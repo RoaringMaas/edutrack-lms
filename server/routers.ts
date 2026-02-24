@@ -15,6 +15,7 @@ import {
   deleteClass,
   getStudentsByClass,
   getStudentById,
+  getStudentByCode,
   createStudent,
   createStudentsBulk,
   updateStudent,
@@ -345,18 +346,26 @@ export const appRouter = router({
         z.object({
           studentId: z.number(),
           name: z.string().min(1).optional(),
-          email: z.string().email().optional(),
+          email: z.string().email().optional().nullable(),
+          studentIdCode: z.string().min(1).max(32).optional(),
         })
       )
       .mutation(async ({ ctx, input }) => {
-        const { studentId, ...data } = input;
+        const { studentId, studentIdCode, ...rest } = input;
         const student = await getStudentById(studentId);
         if (!student) throw new TRPCError({ code: "NOT_FOUND" });
         const cls = await getClassById(student.classId);
         if (cls && ctx.user.eduRole !== "admin" && ctx.user.role !== "admin" && cls.teacherId !== ctx.user.id) {
           throw new TRPCError({ code: "FORBIDDEN" });
         }
-        await updateStudent(studentId, data);
+        // Uniqueness check: ensure no other student in the same class already uses this code
+        if (studentIdCode && studentIdCode !== student.studentId) {
+          const existing = await getStudentByCode(student.classId, studentIdCode);
+          if (existing) throw new TRPCError({ code: "CONFLICT", message: "Student ID already in use in this class" });
+        }
+        const data: Record<string, unknown> = { ...rest };
+        if (studentIdCode) data.studentId = studentIdCode;
+        await updateStudent(studentId, data as any);
         return { success: true };
       }),
 

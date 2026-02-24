@@ -45,6 +45,7 @@ vi.mock("./db", () => ({
   getAllUsers: vi.fn(),
   updateUserEduRole: vi.fn(),
   updateUserAccountStatus: vi.fn(),
+  getStudentByCode: vi.fn(),
   getStudentByShareToken: vi.fn(),
   setStudentShareToken: vi.fn(),
   getUserByEmail: vi.fn(),
@@ -259,6 +260,39 @@ describe("students.create", () => {
   });
 });
 
+describe("students.update", () => {
+  beforeEach(() => vi.clearAllMocks());
+  it("updates name and email without changing the student ID code", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue(SAMPLE_STUDENT);
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.updateStudent).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.students.update({ studentId: 5, name: "Alice Updated", email: "new@test.com" });
+    expect(result.success).toBe(true);
+    expect(db.updateStudent).toHaveBeenCalledOnce();
+  });
+  it("updates the student ID code when it is unique in the class", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue(SAMPLE_STUDENT);
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.getStudentByCode).mockResolvedValue(undefined);
+    vi.mocked(db.updateStudent).mockResolvedValue(undefined);
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    const result = await caller.students.update({ studentId: 5, name: "Alice", studentIdCode: "MAT9999" });
+    expect(result.success).toBe(true);
+    expect(db.getStudentByCode).toHaveBeenCalledWith(10, "MAT9999");
+    expect(db.updateStudent).toHaveBeenCalledOnce();
+  });
+  it("throws CONFLICT when the new student ID code is already taken", async () => {
+    vi.mocked(db.getStudentById).mockResolvedValue(SAMPLE_STUDENT);
+    vi.mocked(db.getClassById).mockResolvedValue(SAMPLE_CLASS);
+    vi.mocked(db.getStudentByCode).mockResolvedValue({ ...SAMPLE_STUDENT, id: 99, studentId: "MAT9999" });
+    const caller = appRouter.createCaller(makeTeacherCtx());
+    await expect(
+      caller.students.update({ studentId: 5, name: "Alice", studentIdCode: "MAT9999" })
+    ).rejects.toThrow(TRPCError);
+    expect(db.updateStudent).not.toHaveBeenCalled();
+  });
+});
 // ─── Assignments & Submissions ────────────────────────────────────────────────
 
 describe("assignments.create", () => {

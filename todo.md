@@ -141,3 +141,9 @@
 - [x] Fix submission rate >100%: added unique index uq_submission on (studentId, assignmentId); deleted 39 duplicate rows
 - [x] Fix Algebra score missing from chart: added unique index uq_grade on (studentId, assessmentId); deleted 11 duplicate null-score rows
 - [x] Clean up existing duplicate submission and grade rows in the database
+
+## Customizable Student ID
+- [x] Add studentId (string code) field to students.update tRPC procedure with uniqueness check per class
+- [x] Add Student ID input field to the Edit Student dialog in ClassDetail (pre-populated with current value)
+- [x] Show the student ID code in the student list table (already shown as badge)
+- [x] Vitest tests for students.update (3 tests) — 48 total tests passing

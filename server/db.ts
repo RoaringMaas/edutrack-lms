@@ -208,6 +208,16 @@ export async function getStudentById(studentId: number): Promise<Student | undef
   const result = await db.select().from(students).where(eq(students.id, studentId)).limit(1);
   return result[0];
 }
+export async function getStudentByCode(classId: number, code: string): Promise<Student | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db
+    .select()
+    .from(students)
+    .where(and(eq(students.classId, classId), eq(students.studentId, code)))
+    .limit(1);
+  return result[0];
+}
 
 export async function createStudent(data: InsertStudent): Promise<number> {
   const db = await getDb();
