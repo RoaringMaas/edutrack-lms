@@ -151,3 +151,6 @@
 ## Bug Fixes (Round 4)
 - [x] Fix Bug #1: Pending users can log in — changed accountStatus check from === "rejected" to !== "approved"; also removed pending approval flow from frontend
 - [x] Fix Bug #2: Debug console.log statements leak PII — removed two console.log lines from auth.login procedure
+
+## UI Enhancements
+- [x] Make Students, Homework, Assessments navigation buttons bigger and more prominent (larger text, padding, icons) — increased font size to base, padding to px-6 py-3, icon size to h-5 w-5, added gap between buttons

@@ -123,17 +123,17 @@ export default function ClassDetail() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-background border">
-          <TabsTrigger value="students" className="gap-2">
-            <Users className="h-4 w-4" />
+        <TabsList className="bg-background border gap-2 p-2 h-auto">
+          <TabsTrigger value="students" className="gap-2 px-6 py-3 text-base font-semibold">
+            <Users className="h-5 w-5" />
             Students
           </TabsTrigger>
-          <TabsTrigger value="homework" className="gap-2">
-            <BookOpen className="h-4 w-4" />
+          <TabsTrigger value="homework" className="gap-2 px-6 py-3 text-base font-semibold">
+            <BookOpen className="h-5 w-5" />
             Homework
           </TabsTrigger>
-          <TabsTrigger value="assessments" className="gap-2">
-            <ClipboardList className="h-4 w-4" />
+          <TabsTrigger value="assessments" className="gap-2 px-6 py-3 text-base font-semibold">
+            <ClipboardList className="h-5 w-5" />
             Assessments
           </TabsTrigger>
         </TabsList>
