@@ -156,3 +156,8 @@
 - [x] Make Students, Homework, Assessments navigation buttons bigger and more prominent (larger text, padding, icons) — increased font size to base, padding to px-6 py-3, icon size to h-5 w-5, added gap between buttons
 
 - [x] Highlight the currently active tab (Students/Homework/Assessments) with prominent background color and styling — added blue-600 background, white text, rounded corners, and smooth transition on active state
+
+## Search & Filter Feature
+- [x] Add search bar to Students tab (filter by name or student ID) — already implemented
+- [x] Add search bar to Homework tab (filter by assignment name) — added search input to filter assignments by name
+- [x] Add search bar to Assessments tab (filter by assessment name or student name) — already implemented

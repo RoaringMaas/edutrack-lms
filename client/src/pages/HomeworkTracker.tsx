@@ -34,6 +34,7 @@ import {
   Download,
   Trash2,
   Edit,
+  Search,
 } from "lucide-react";
 
 type SubmissionStatus = "submitted" | "late" | "missing" | "pending";
@@ -84,6 +85,7 @@ export default function HomeworkTracker({
   isAdmin: boolean;
 }) {
   const [selectedWeek, setSelectedWeek] = useState("Week 1");
+  const [searchQuery, setSearchQuery] = useState("");
   const [showAddAssignment, setShowAddAssignment] = useState(false);
   const [newAssignmentName, setNewAssignmentName] = useState("");
   const [newAssignmentPoints, setNewAssignmentPoints] = useState("");
@@ -169,10 +171,13 @@ export default function HomeworkTracker({
     onError: (e) => toast.error(e.message),
   });
 
-  // Filter assignments by selected week
+  // Filter assignments by selected week and search query
   const weekAssignments = useMemo(
-    () => assignments.filter((a) => a.weekLabel === selectedWeek),
-    [assignments, selectedWeek]
+    () => assignments.filter((a) => 
+      a.weekLabel === selectedWeek && 
+      a.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ),
+    [assignments, selectedWeek, searchQuery]
   );
 
   // Build submission lookup: studentId_assignmentId -> status
@@ -252,7 +257,7 @@ export default function HomeworkTracker({
     <div className="space-y-4">
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2">
             <Label className="text-sm font-medium shrink-0">Week:</Label>
             <Select value={selectedWeek} onValueChange={setSelectedWeek}>
@@ -265,6 +270,15 @@ export default function HomeworkTracker({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="relative min-w-[180px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search assignments..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
           {/* Summary badges */}
           <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
