@@ -1,5 +1,5 @@
 import { trpc } from "@/lib/trpc";
-import { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import Papa from "papaparse";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,7 @@ import {
   Trophy,
   BarChart2,
   StickyNote,
+  Edit,
 } from "lucide-react";
 
 type Assessment = {
@@ -95,6 +96,8 @@ export default function AssessmentScoreboard({
   const [csvImportAssessmentId, setCsvImportAssessmentId] = useState<number | null>(null);
   const [editingCell, setEditingCell] = useState<{ studentId: number; assessmentId: number } | null>(null);
   const [cellValue, setCellValue] = useState("");
+  const [showEditNotes, setShowEditNotes] = useState(false);
+  const [notesValue, setNotesValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const utils = trpc.useUtils();
@@ -102,6 +105,22 @@ export default function AssessmentScoreboard({
   const { data: assessments = [] } = trpc.assessments.list.useQuery({ classId });
   const { data: grades = [] } = trpc.grades.listByClass.useQuery({ classId });
   const { data: teacherNotesData } = trpc.teacherNotes.get.useQuery({ classId });
+
+  // Update notes value when data loads
+  React.useEffect(() => {
+    if (teacherNotesData?.notes) {
+      setNotesValue(teacherNotesData.notes);
+    }
+  }, [teacherNotesData?.notes]);
+
+  const updateNotesMutation = trpc.teacherNotes.upsert.useMutation({
+    onSuccess: () => {
+      utils.teacherNotes.get.invalidate({ classId });
+      setShowEditNotes(false);
+      toast.success("Notes saved");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const upsertGrade = trpc.grades.upsert.useMutation({
     onMutate: async (newData) => {
@@ -407,11 +426,17 @@ export default function AssessmentScoreboard({
           </CardContent>
         </Card>
 
-        <Card className="border shadow-sm">
+        <Card className="border shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => {
+          setShowEditNotes(true);
+          setNotesValue(teacherNotesData?.notes || "");
+        }}>
           <CardContent className="p-3">
-            <div className="flex items-center gap-2 mb-1">
-              <StickyNote className="h-4 w-4 text-purple-500" />
-              <span className="text-xs font-medium text-muted-foreground">Teacher Notes</span>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <div className="flex items-center gap-2">
+                <StickyNote className="h-4 w-4 text-purple-500" />
+                <span className="text-xs font-medium text-muted-foreground">Teacher Notes</span>
+              </div>
+              <Edit className="h-4 w-4 text-muted-foreground" />
             </div>
             <p className="text-xs text-muted-foreground line-clamp-2">
               {teacherNotesData?.notes || "No notes yet"}
@@ -691,6 +716,29 @@ export default function AssessmentScoreboard({
           onUpdate={() => utils.assessments.list.invalidate({ classId })}
         />
       )}
+
+      {/* Edit Teacher Notes Dialog */}
+      <Dialog open={showEditNotes} onOpenChange={setShowEditNotes}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Teacher Notes</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Textarea
+              placeholder="Add notes about this class..."
+              value={notesValue}
+              onChange={(e) => setNotesValue(e.target.value)}
+              className="min-h-[150px]"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditNotes(false)}>Cancel</Button>
+            <Button onClick={() => updateNotesMutation.mutate({ classId, notes: notesValue })} disabled={updateNotesMutation.isPending}>
+              {updateNotesMutation.isPending ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

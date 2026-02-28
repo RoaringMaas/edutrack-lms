@@ -161,3 +161,8 @@
 - [x] Add search bar to Students tab (filter by name or student ID) — already implemented
 - [x] Add search bar to Homework tab (filter by assignment name) — added search input to filter assignments by name
 - [x] Add search bar to Assessments tab (filter by assessment name or student name) — already implemented
+
+## Teacher Notes Edit Feature
+- [x] Add edit button/icon to Teacher Notes card — card is now clickable with edit icon visible
+- [x] Add edit dialog with textarea for notes content — dialog opens on card click with textarea input
+- [x] Wire up teacherNotes.upsert mutation to save changes — notes are saved and refreshed on success
